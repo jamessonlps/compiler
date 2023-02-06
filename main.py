@@ -11,6 +11,9 @@ def check_sum():
     string_clear = operation.replace(" ", "")
     # string_splitted = re.findall(pattern=r"[0-9]|[+-]", string=string_clear)
 
-    return eval(string_clear)
+    result = eval(string_clear)
+    print(result)
+    return result
 
-check_sum()
+if __name__ == "__main__":
+    check_sum()
