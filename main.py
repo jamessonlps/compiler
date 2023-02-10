@@ -1,5 +1,6 @@
 import sys
 import re
+import ast
 
 def check_sum():
     if (len(sys.argv) > 2):
@@ -11,7 +12,7 @@ def check_sum():
     string_clear = operation.replace(" ", "")
     # string_splitted = re.findall(pattern=r"[0-9]|[+-]", string=string_clear)
 
-    result = eval(string_clear)
+    result = ast.literal_eval(string_clear)
     print(result)
     return result
 
