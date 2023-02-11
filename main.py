@@ -13,9 +13,13 @@ def check_sum():
     if (len(string_with_numbers_spaced) > 0):
         raise Exception("Operação inválida.")
     
+    # Verifica se começa com sinal de operação
+    starts_with_signal = re.findall(pattern=r"^[+-]", string=operation)
+    if (len(starts_with_signal) > 0):
+        raise Exception("Operação inválida.")
+    
     # Limpa espaços em branco
     string_clear = operation.replace(" ", "")
-    # string_splitted = re.findall(pattern=r"[0-9]|[+-]", string=string_clear)
 
     result = eval(string_clear)
     print(result)
