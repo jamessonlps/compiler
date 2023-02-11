@@ -9,13 +9,9 @@ def check_sum():
     operation: str = sys.argv[1]
 
     # Verifica se há espaço em branco entre 2 números consecutivos
-    string_with_numbers_spaced = re.findall(pattern=r"[0-9]\s+[0-9]", string=operation)
-    if (len(string_with_numbers_spaced) > 0):
-        raise Exception("Operação inválida.")
-    
-    # Verifica se começa com sinal de operação
-    starts_with_signal = re.findall(pattern=r"^[+-]", string=operation)
-    if (len(starts_with_signal) > 0):
+    # Ou se começa com algun sinal de operação
+    string_filtered = re.findall(pattern=r"[0-9]\s+[0-9]|^[+-]", string=operation)
+    if (len(string_filtered) > 0):
         raise Exception("Operação inválida.")
     
     # Limpa espaços em branco
