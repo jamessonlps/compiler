@@ -67,6 +67,8 @@ class Parser():
         while True:
             try:
                 if (Parser.tokenizer.next.type == "int"):
+                    if ((len(expression) > 0) and (expression[-1].isnumeric())):
+                        raise Exception("Operação inválida.")
                     expression += str(Parser.tokenizer.next.value)
                 elif (Parser.tokenizer.next.type == "plus"):
                     expression += "+"
@@ -77,6 +79,8 @@ class Parser():
                 Parser.tokenizer.selectNext()
             except IndexError:
                 break
+        if not (expression[0].isnumeric()):
+            raise Exception("Operação inválida.")
         result = eval(expression)
         print(result)
         return result
