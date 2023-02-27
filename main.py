@@ -66,6 +66,7 @@ class Tokenizer():
             else:
                 print("Entrou no else:")
                 print(current_exp_token, len(current_exp_token))
+                raise Exception("Entrou no else")
 
 
 
