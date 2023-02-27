@@ -43,7 +43,7 @@ class Tokenizer():
                 self.position += 1
                 reading = False
             # Espaço em branco (ignora)
-            elif (current_exp_token == " "):
+            elif (current_exp_token == " " or current_exp_token == ""):
                 self.position += 1
             # Quando é número, verifica até chegar ao final do número
             elif (current_exp_token.isnumeric()):
@@ -64,7 +64,6 @@ class Tokenizer():
                             self.next = Token(token_type="int", value=int(token))
                             token = ""
             else:
-                print(current_exp_token)
                 raise TypeError
 
 
@@ -79,7 +78,6 @@ class Parser():
         a sintaxe está aderente à gramática proposta.
         Retorna o resultado da expressão analisada.
         """
-        expression: str = ""
         expression_arr = []
         while True:
             try:
@@ -103,7 +101,7 @@ class Parser():
                 break
         if not (expression_arr[0].isnumeric()):
             raise Exception("Operação inválida.")
-        expression = expression.join(expression_arr)
+        expression = "".join(expression_arr)
         result = eval(expression)
         print(result)
         return result
