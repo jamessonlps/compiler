@@ -64,6 +64,7 @@ class Tokenizer():
                             self.next = Token(token_type="int", value=int(token))
                             token = ""
             else:
+                print(current_exp_token)
                 raise TypeError
 
 
