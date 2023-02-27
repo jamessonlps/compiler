@@ -105,7 +105,6 @@ class Parser():
         if not (expression_arr[0].isnumeric()):
             raise Exception("Operação inválida.")
         expression = expression.join(expression_arr)
-        print("Expressão =", expression)
         result = eval(expression)
         print(result)
         return result
@@ -123,10 +122,8 @@ class Parser():
                 # Se o próximo é inteiro, faz a operação e retorna o resultado
                 if (Parser.tokenizer.next.type == "int"):
                     term = str(number) + op + str(Parser.tokenizer.next.value)
-                    print(term)
                     return str(eval(term))
                 else:
-                    print("O que fazer aqui?")
                     raise Exception("Erro no parseTerm")
             except IndexError:
                 break
