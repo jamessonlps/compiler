@@ -43,7 +43,7 @@ class Tokenizer():
                 self.position += 1
                 reading = False
             # Espaço em branco (ignora)
-            elif (current_exp_token == " " or current_exp_token == ""):
+            elif (current_exp_token in [" ", "\n", "\r", "\t"]):
                 self.position += 1
             # Quando é número, verifica até chegar ao final do número
             elif (current_exp_token.isnumeric()):
@@ -64,9 +64,7 @@ class Tokenizer():
                             self.next = Token(token_type="int", value=int(token))
                             token = ""
             else:
-                print("Entrou no else:")
-                print(current_exp_token, len(current_exp_token))
-                raise Exception("Entrou no else")
+                raise TypeError
 
 
 
