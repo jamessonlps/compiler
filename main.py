@@ -1,3 +1,4 @@
+import re
 import sys
 
 class Token():
@@ -21,16 +22,30 @@ class Tokenizer():
         token = ""
         while reading:
             current_exp_token = self.source[self.position]
+            # Sinal de adição
             if (current_exp_token == "+"):
                 self.next = Token(token_type="plus", value=0)
                 self.position += 1
                 reading = False
+            # Sinal de subtração
             elif (current_exp_token == "-"):
                 self.next = Token(token_type="minus", value=-1)
                 self.position += 1
                 reading = False
+            # Sinal de multiplicação
+            elif (current_exp_token == "*"):
+                self.next = Token(token_type="mult", value="*")
+                self.position += 1
+                reading = False
+            # Sinal de divisão
+            elif (current_exp_token == "/"):
+                self.next = Token(token_type="div", value="//")
+                self.position += 1
+                reading = False
+            # Espaço em branco (ignora)
             elif (current_exp_token == " "):
                 self.position += 1
+            # Quando é número, verifica até chegar ao final do número
             elif (current_exp_token.isnumeric()):
                 numeric_token = True
                 while numeric_token:
@@ -64,26 +79,57 @@ class Parser():
         Retorna o resultado da expressão analisada.
         """
         expression: str = ""
+        expression_arr = []
+        last_int: int = 0
         while True:
             try:
+                # Se o token anterior é int, erro. Senão, acrescenta à exp.
                 if (Parser.tokenizer.next.type == "int"):
-                    if ((len(expression) > 0) and (expression[-1].isnumeric())):
+                    if ((len(expression_arr) > 0) and (expression_arr[-1].isnumeric())):
                         raise Exception("Operação inválida.")
-                    expression += str(Parser.tokenizer.next.value)
+                    expression_arr.append(str(Parser.tokenizer.next.value))
+                    last_int = Parser.tokenizer.next.value
+                # Se o token é um sinal, adiciona à expressão
                 elif (Parser.tokenizer.next.type == "plus"):
-                    expression += "+"
+                    expression_arr.append("+")
                 elif (Parser.tokenizer.next.type == "minus"):
-                    expression += "-"
+                    expression_arr.append("-")
+                # Se é outro sinal, manda pro parseTerm
                 else:
-                    pass
+                    expression_arr.pop()
+                    expression_arr.append(Parser.parseTerm(number=last_int, op=Parser.tokenizer.next.value))
+                # Avança o tokenizer
                 Parser.tokenizer.selectNext()
             except IndexError:
                 break
-        if not (expression[0].isnumeric()):
+        if not (expression_arr[0].isnumeric()):
             raise Exception("Operação inválida.")
+        expression = expression.join(expression_arr)
+        print("Expressão =", expression)
         result = eval(expression)
         print(result)
         return result
+
+    @staticmethod
+    def parseTerm(number: int, op: str) -> str:
+        """
+        Trata o caso de multiplicação e divisão
+        (prioridade sobre adição e subtração)
+        """
+        term: str = ""
+        while True:
+            try:
+                Parser.tokenizer.selectNext()
+                # Se o próximo é inteiro, faz a operação e retorna o resultado
+                if (Parser.tokenizer.next.type == "int"):
+                    term = str(number) + op + str(Parser.tokenizer.next.value)
+                    print(term)
+                    return str(eval(term))
+                else:
+                    print("O que fazer aqui?")
+                    raise Exception("Erro no parseTerm")
+            except IndexError:
+                break
 
     @staticmethod
     def run(code) -> int:
@@ -94,11 +140,17 @@ class Parser():
         Esse método será chamado pelo `main()`. Ao final verificar
         se terminou de consumir (token é EOF).
         """
-        Parser.tokenizer = Tokenizer(source=code)
+        code_processed = PrePro.filter(text=code)
+        Parser.tokenizer = Tokenizer(source=code_processed)
         Parser.tokenizer.selectNext()
         return Parser.parseExpression()
         
 
+
+class PrePro():
+    @staticmethod
+    def filter(text: str) -> str:
+        return re.sub(pattern=r"#.*", repl="", string=text)
 
 
 if __name__ == "__main__":
