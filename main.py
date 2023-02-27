@@ -80,7 +80,6 @@ class Parser():
         """
         expression: str = ""
         expression_arr = []
-        last_int: int = 0
         while True:
             try:
                 # Se o token anterior é int, erro. Senão, acrescenta à exp.
@@ -88,7 +87,6 @@ class Parser():
                     if ((len(expression_arr) > 0) and (expression_arr[-1].isnumeric())):
                         raise Exception("Operação inválida.")
                     expression_arr.append(str(Parser.tokenizer.next.value))
-                    last_int = Parser.tokenizer.next.value
                 # Se o token é um sinal, adiciona à expressão
                 elif (Parser.tokenizer.next.type == "plus"):
                     expression_arr.append("+")
@@ -96,8 +94,8 @@ class Parser():
                     expression_arr.append("-")
                 # Se é outro sinal, manda pro parseTerm
                 else:
-                    expression_arr.pop()
-                    expression_arr.append(Parser.parseTerm(number=last_int, op=Parser.tokenizer.next.value))
+                    expression_arr.append(Parser.parseTerm(number=expression_arr[-1], op=Parser.tokenizer.next.value))
+                    expression_arr.pop(-2)
                 # Avança o tokenizer
                 Parser.tokenizer.selectNext()
             except IndexError:
