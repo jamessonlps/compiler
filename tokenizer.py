@@ -5,56 +5,66 @@ class Tokenizer():
         self.source = source
         self.position = position
         self.next: Token = None
+        self._source_size = len(source)
+    
+
+    def _jump_white_spaces(self, current_token: str) -> str:
+        while ((current_token.isspace()) and (self.position < self._source_size)):
+            self.position += 1
+            if self.position < self._source_size:
+                return self.source[self.position]
+    
+
+    def _get_number_token(self, current_token: str) -> None:
+        number_string = ""
+        while ((current_token.isdigit()) and (self.position < self._source_size)):
+            number_string += current_token
+            self.position += 1
+            if self.position < self._source_size:
+                current_token = self.source[self.position]
+        self.next = NumberToken(int(number_string))
 
 
     def selectNext(self) -> None:
         """
         Set the next token to the `next` param.
         """
-        source_size = len(self.source)
-        reading = True
+        current_token = self.source[self.position]
         
-        while reading:
-            current_token = self.source[self.position]
-            if current_token == "+":
-                self.next = PlusToken()
-                self.position += 1
-                reading = False
-            elif current_token == "-":
-                self.next = MinusToken()
-                self.position += 1
-                reading = False
-            elif current_token == "*":
-                self.next = MultiplicationToken()
-                self.position += 1
-                reading = False
-            elif current_token == "/":
-                self.next == DivisionToken()
-                self.position += 1
-                reading = False
-            elif current_token == "(":
-                self.next = LeftParenthesisToken()
-                self.position += 1
-                reading = False
-            elif current_token == ")":
-                self.next = RightParenthesisToken()
-                self.position += 1
-                reading = False
-            elif current_token == "\0":
-                self.next = EndOfFileToken()
-                reading = False
-            # Number case
-            elif current_token.isdigit():
-                number_str = ""
-                while (current_token.isdigit() and self.position < source_size):
-                    number_str += current_token
-                    self.position += 1
-                    if (self.position < source_size):
-                        current_token = self.source[self.position]
-                self.next = NumberToken(int(number_str))
-                reading = False
-            # White space case
-            elif current_token.isspace():
-                self.position += 1
-            else:
-                raise TypeError(f"Invalid Token: {current_token}")
+        # Jump all wihte spaces before get next valid token
+        if current_token.isspace():
+            current_token = self._jump_white_spaces(current_token=current_token)
+        
+        # After jump white spaces, set the token
+        if current_token.isdigit():
+            self._get_number_token(current_token=current_token)
+        
+        elif current_token == "+":
+            self.next = PlusToken()
+            self.position += 1
+        
+        elif current_token == "-":
+            self.next = MinusToken()
+            self.position += 1
+        
+        elif current_token == "*":
+            self.next = MultiplicationToken()
+            self.position += 1
+        
+        elif current_token == "/":
+            self.next = DivisionToken()
+            self.position += 1
+        
+        elif current_token == "(":
+            self.next = LeftParenthesisToken()
+            self.position += 1
+        
+        elif current_token == ")":
+            self.next = RightParenthesisToken()
+            self.position += 1
+        
+        elif current_token == "\0":
+            self.next = EndOfFileToken()
+        
+        else:
+            raise TypeError(f"Unexpected or invalid token: {current_token}")

@@ -30,22 +30,31 @@ class Parser():
                         term += Parser.parseTerm()
                     else:
                         raise SyntaxError
-                elif isinstance(Parser.tokenizer.next, MinusToken):
+                
+                if isinstance(Parser.tokenizer.next, MinusToken):
                     Parser.tokenizer.selectNext()
                     if isinstance(Parser.tokenizer.next, (NumberToken, PlusToken, MinusToken, LeftParenthesisToken)):
                         term -= Parser.parseTerm()
                     else:
                         raise SyntaxError
-                else:
+                
+                Parser.tokenizer.selectNext()
+                
+                if not isinstance(Parser.tokenizer.next, (PlusToken, MinusToken)):
                     valid_term = False
+
             return term
         else:
-            raise SyntaxError
+            raise SyntaxError("Error on parseExpression")
 
 
 
     @staticmethod
     def parseTerm() -> int:
+        """
+        Call `parseFactor` and apply multiplication and division
+        if necessary.
+        """
 
         # Factor can receive '+, '-', number and '(' tokens.
         if isinstance(Parser.tokenizer.next, (NumberToken, PlusToken, MinusToken, LeftParenthesisToken)):
@@ -64,14 +73,17 @@ class Parser():
                         Parser.tokenizer.selectNext()
                     else:
                         raise SyntaxError("Multiplication Error")
-                elif isinstance(Parser.tokenizer.next, DivisionToken):
+                
+                if isinstance(Parser.tokenizer.next, DivisionToken):
                     Parser.tokenizer.selectNext()
+                    print("Divisão:", factor)
                     if isinstance(Parser.tokenizer.next, (NumberToken, PlusToken, MinusToken, LeftParenthesisToken)):
                         factor //= Parser.parseFactor()
                         Parser.tokenizer.selectNext()
                     else:
                         raise SyntaxError("Division Error")
-                else:
+                
+                if not isinstance(Parser.tokenizer.next, (MultiplicationToken, DivisionToken)):
                     valid_factor = False
                 
             return factor
@@ -82,23 +94,32 @@ class Parser():
 
     @staticmethod
     def parseFactor() -> int:
+        """
+        A factor must start with `number`, `+`, `-` or `(`.
+        Then, can call `parseFactor` or `parseExpression` to calculate
+        the return value.
+        """
         if isinstance(Parser.tokenizer.next, NumberToken):
             return Parser.tokenizer.next.value
+        
         elif isinstance(Parser.tokenizer.next, PlusToken):
             Parser.tokenizer.selectNext()
             factor = Parser.parseFactor()
             return factor
+        
         elif isinstance(Parser.tokenizer.next, MinusToken):
             Parser.tokenizer.selectNext()
             factor = Parser.parseFactor()
             return -factor
+        
         elif isinstance(Parser.tokenizer.next, LeftParenthesisToken):
             expression = Parser.parseExpression()
             if isinstance(Parser.tokenizer.next, RightParenthesisToken):
                 return expression
             raise SyntaxError("An opened parenthesis must be closed.")
+        
         else:
-            raise SyntaxError("This syntax is invalid!")
+            raise SyntaxError("Error on parseFactor!")
 
 
 
