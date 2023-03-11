@@ -5,47 +5,57 @@ class Tokenizer():
         self.source = source
         self.position = position
         self.next: Token = None
-    
-    def selectNext(self) -> None:
-        source_size = len(self.source)
-        current_token = self.source[self.position]
 
-        if current_token == "+":
-            self.next = PlusToken()
-            self.position += 1
-        elif current_token == "-":
-            self.next = MinusToken()
-            self.position += 1
-        elif current_token == "*":
-            self.next = MultiplicationToken()
-            self.position += 1
-        elif current_token == "/":
-            self.next == DivisionToken()
-            self.position += 1
-        elif current_token == "(":
-            self.next = ParenthesisToken(parenthesis_type="start")
-            self.position += 1
-        elif current_token == ")":
-            self.next = ParenthesisToken(parenthesis_type="end")
-            self.position += 1
-        elif current_token.isdigit():
-            pos = self.position
-            number_str = ""
-            while (current_token.isdigit() and pos < source_size):
-                number_str += current_token
-                pos += 1
+
+    def selectNext(self) -> None:
+        """
+        Set the next token to the `next` param.
+        """
+        source_size = len(self.source)
+        reading = True
+        
+        while reading:
+            current_token = self.source[self.position]
+            print("Token atual:", current_token)
+            if current_token == "+":
+                self.next = PlusToken()
                 self.position += 1
-                if (pos < source_size):
-                    current_token = self.source[self.position]
-            self.next = NumberToken(value=int(number_str))
-        # White space
-        elif current_token.isspace():
-            pos = self.position
-            while (current_token.isspace() and pos < source_size):
-                # Update read position and get next token
-                pos += 1
+                reading = False
+            elif current_token == "-":
+                self.next = MinusToken()
                 self.position += 1
-                if pos < source_size:
-                    current_token = self.source[self.position]
-        else:
-            raise TypeError
+                reading = False
+            elif current_token == "*":
+                self.next = MultiplicationToken()
+                self.position += 1
+                reading = False
+            elif current_token == "/":
+                self.next == DivisionToken()
+                self.position += 1
+                reading = False
+            elif current_token == "(":
+                self.next = LeftParenthesisToken()
+                self.position += 1
+                reading = False
+            elif current_token == ")":
+                self.next = RightParenthesisToken()
+                self.position += 1
+                reading = False
+            elif current_token == "\0":
+                self.next = EndOfFileToken()
+                reading = False
+            # Number case
+            elif current_token.isdigit():
+                number_str = ""
+                while (current_token.isdigit() and self.position < source_size):
+                    number_str += current_token
+                    self.position += 1
+                    if (self.position < source_size):
+                        current_token = self.source[self.position]
+                self.next = NumberToken(int(number_str))
+                reading = False
+            # White space case
+            elif current_token.isspace():
+                self.position += 1
+            else:
+                raise TypeError(f"Invalid Token: {current_token}")

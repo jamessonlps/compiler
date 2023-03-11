@@ -9,3 +9,11 @@ class PrePro():
         @param `text`: str
         """
         return re.sub(pattern=r"#.*", repl="", string=text)
+
+
+    @staticmethod
+    def add_eof(text: str) -> str:
+        """
+        Add the EOF to the given string.
+        """
+        return text + "\0"
