@@ -16,7 +16,6 @@ class Tokenizer():
         
         while reading:
             current_token = self.source[self.position]
-            print("Token atual:", current_token)
             if current_token == "+":
                 self.next = PlusToken()
                 self.position += 1
