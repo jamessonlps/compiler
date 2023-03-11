@@ -9,19 +9,22 @@ class Tokenizer():
     
 
     def _jump_white_spaces(self, current_token: str) -> str:
-        while ((current_token.isspace()) and (self.position < self._source_size)):
+        token = current_token
+        while ((token.isspace()) and (self.position < self._source_size)):
             self.position += 1
             if self.position < self._source_size:
-                return self.source[self.position]
+                token = self.source[self.position]
+        return token
     
 
     def _get_number_token(self, current_token: str) -> None:
         number_string = ""
-        while ((current_token.isdigit()) and (self.position < self._source_size)):
-            number_string += current_token
+        token = current_token
+        while ((token.isdigit()) and (self.position < self._source_size)):
+            number_string += token
             self.position += 1
             if self.position < self._source_size:
-                current_token = self.source[self.position]
+                token = self.source[self.position]
         self.next = NumberToken(int(number_string))
 
 

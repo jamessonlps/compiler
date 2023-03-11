@@ -38,9 +38,10 @@ class Parser():
                     else:
                         raise SyntaxError
                 
-                Parser.tokenizer.selectNext()
-                
-                if not isinstance(Parser.tokenizer.next, (PlusToken, MinusToken)):
+                if isinstance(Parser.tokenizer.next, (PlusToken, MinusToken)):
+                    # Parser.tokenizer.selectNext()
+                    pass
+                else:
                     valid_term = False
 
             return term
@@ -76,7 +77,6 @@ class Parser():
                 
                 if isinstance(Parser.tokenizer.next, DivisionToken):
                     Parser.tokenizer.selectNext()
-                    print("Divisão:", factor)
                     if isinstance(Parser.tokenizer.next, (NumberToken, PlusToken, MinusToken, LeftParenthesisToken)):
                         factor //= Parser.parseFactor()
                         Parser.tokenizer.selectNext()
@@ -132,7 +132,7 @@ class Parser():
         
         value = Parser.parseExpression()
         print(value)
-        
+
         if isinstance(Parser.tokenizer.next, EndOfFileToken):
             return value
         raise SyntaxError("Where is EOF?")
