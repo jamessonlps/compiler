@@ -140,9 +140,9 @@ class Parser():
         
         Parser.tokenizer = Tokenizer(source=code_processed)
         
-        root = Parser.parseExpression()
-        print(root.evaluate())
+        result = Parser.parseExpression().evaluate()
+        print(result)
 
         if isinstance(Parser.tokenizer.next, EndOfFileToken):
-            return root
+            return result
         raise SyntaxError("Where is EOF?")
