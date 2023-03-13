@@ -1,13 +1,14 @@
 from preprocess import PrePro
 from tokenizer import Tokenizer
 from tokens import *
+from node import *
 
 
 class Parser():
     tokenizer: Tokenizer = None
 
     @staticmethod
-    def parseExpression() -> int:
+    def parseExpression() -> Node:
         """
         Starting point: get the next token and call parse term.
         """
@@ -27,14 +28,18 @@ class Parser():
                 if isinstance(Parser.tokenizer.next, PlusToken):
                     Parser.tokenizer.selectNext()
                     if isinstance(Parser.tokenizer.next, (NumberToken, PlusToken, MinusToken, LeftParenthesisToken)):
-                        term += Parser.parseTerm()
+                        term2 = Parser.parseTerm()
+                        term = BinUp(value="+", children=[term, term2])
+                        # term += Parser.parseTerm()
                     else:
                         raise SyntaxError
                 
                 if isinstance(Parser.tokenizer.next, MinusToken):
                     Parser.tokenizer.selectNext()
                     if isinstance(Parser.tokenizer.next, (NumberToken, PlusToken, MinusToken, LeftParenthesisToken)):
-                        term -= Parser.parseTerm()
+                        term2 = Parser.parseTerm()
+                        term = BinUp(value="-", children=[term, term2])
+                        # term -= Parser.parseTerm()
                     else:
                         raise SyntaxError
                 
@@ -51,7 +56,7 @@ class Parser():
 
 
     @staticmethod
-    def parseTerm() -> int:
+    def parseTerm() -> Node:
         """
         Call `parseFactor` and apply multiplication and division
         if necessary.
@@ -70,7 +75,9 @@ class Parser():
                 if isinstance(Parser.tokenizer.next, MultiplicationToken):
                     Parser.tokenizer.selectNext()
                     if isinstance(Parser.tokenizer.next, (NumberToken, PlusToken, MinusToken, LeftParenthesisToken)):
-                        factor *= Parser.parseFactor()
+                        factor2 = Parser.parseFactor()
+                        factor = BinUp(value="*", children=[factor, factor2])
+                        # factor *= Parser.parseFactor()
                         Parser.tokenizer.selectNext()
                     else:
                         raise SyntaxError("Multiplication Error")
@@ -78,7 +85,9 @@ class Parser():
                 if isinstance(Parser.tokenizer.next, DivisionToken):
                     Parser.tokenizer.selectNext()
                     if isinstance(Parser.tokenizer.next, (NumberToken, PlusToken, MinusToken, LeftParenthesisToken)):
-                        factor //= Parser.parseFactor()
+                        factor2 = Parser.parseFactor()
+                        factor = BinUp(value="/", children=[factor, factor2])
+                        # factor //= Parser.parseFactor()
                         Parser.tokenizer.selectNext()
                     else:
                         raise SyntaxError("Division Error")
@@ -93,24 +102,25 @@ class Parser():
 
 
     @staticmethod
-    def parseFactor() -> int:
+    def parseFactor() -> Node:
         """
         A factor must start with `number`, `+`, `-` or `(`.
         Then, can call `parseFactor` or `parseExpression` to calculate
         the return value.
         """
         if isinstance(Parser.tokenizer.next, NumberToken):
-            return Parser.tokenizer.next.value
+            return IntVal(value=Parser.tokenizer.next.value)
+            # return Parser.tokenizer.next.value
         
         elif isinstance(Parser.tokenizer.next, PlusToken):
             Parser.tokenizer.selectNext()
             factor = Parser.parseFactor()
-            return factor
+            return UnOp(value="+", children=[factor])
         
         elif isinstance(Parser.tokenizer.next, MinusToken):
             Parser.tokenizer.selectNext()
             factor = Parser.parseFactor()
-            return -factor
+            return UnOp(value="-", children=[factor])
         
         elif isinstance(Parser.tokenizer.next, LeftParenthesisToken):
             expression = Parser.parseExpression()
@@ -130,9 +140,9 @@ class Parser():
         
         Parser.tokenizer = Tokenizer(source=code_processed)
         
-        value = Parser.parseExpression()
-        print(value)
+        root = Parser.parseExpression()
+        print(root.evaluate())
 
         if isinstance(Parser.tokenizer.next, EndOfFileToken):
-            return value
+            return root
         raise SyntaxError("Where is EOF?")
