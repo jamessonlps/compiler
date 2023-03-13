@@ -38,8 +38,8 @@ class UnOp(Node):
 
 
 class IntVal(Node):
-  def __init__(self, value: Union[int, str], children: list[Node] = []) -> None:
-    super().__init__(value, children)
+  def __init__(self, value: Union[int, str]) -> None:
+    super().__init__(value, children=[])
   
   def evaluate(self) -> int:
     return self.value
