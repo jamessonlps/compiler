@@ -14,14 +14,18 @@ class Node(ABC):
 
 
 class BinUp(Node):
-  def __init__(self, value, children) -> None:
+  def __init__(self, value, children: list[Node] = []) -> None:
     super().__init__(value=value, children=children)
 
   def evaluate(self) -> int:
     left = self.children[0].evaluate()
     right = self.children[1].evaluate()
-    if (self.value in ["+", "-", "*"]):
-      return int(eval(f"{left} {self.value} {right}"))
+    if self.value == "+":
+      return left + right
+    elif self.value == "-":
+      return left - right
+    elif self.value == "*":
+      return left * right
     elif (self.value == "/"):
       return left // right
     raise SyntaxError("Cannot evaluate a bin operation:", left, self.value, right)
@@ -33,7 +37,12 @@ class UnOp(Node):
     super().__init__(value, children)
 
   def evaluate(self) -> int:
-    return self.children[0].evaluate()
+    if (self.value == "+"):
+      return self.children[0].evaluate()
+    elif (self.value == "-"):
+      return -self.children[0].evaluate()
+    else:
+      raise SyntaxError("Invalid unary operation: value = ", self.value)
 
 
 
