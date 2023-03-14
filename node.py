@@ -14,7 +14,7 @@ class Node(ABC):
 
 
 class BinUp(Node):
-  def __init__(self, value, children: list[Node] = []) -> None:
+  def __init__(self, value, children) -> None:
     super().__init__(value=value, children=children)
 
   def evaluate(self) -> int:
@@ -47,7 +47,7 @@ class UnOp(Node):
 
 
 class IntVal(Node):
-  def __init__(self, value: Union[int, str]) -> None:
+  def __init__(self, value: int) -> None:
     super().__init__(value, children=[])
   
   def evaluate(self) -> int:
