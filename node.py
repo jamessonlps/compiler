@@ -9,7 +9,7 @@ class Node(ABC):
     self.children: list[Node] = children
 
   @abstractmethod
-  def evaluate(self) -> int | None:
+  def evaluate(self) -> Union[int, None]:
     return
 
 
