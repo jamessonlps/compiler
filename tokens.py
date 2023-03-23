@@ -67,6 +67,33 @@ class DivisionToken(Token):
         return "/"
 
 
+class EqualsToken(Token):
+    def __init__(self) -> None:
+        super().__init__(0)
+    
+    @property
+    def type(self) -> str:
+        return "="
+    
+
+class BreakLineToken(Token):
+    def __init__(self) -> None:
+        super().__init__(0)
+    
+    @property
+    def type(self) -> str:
+        return "\n"
+
+
+class IdentifierToken(Token):
+    def __init__(self, value: str) -> None:
+        super().__init__(value)
+    
+    @property
+    def type(self) -> str:
+        return self._value
+
+
 
 # ------- Tokens de outros sinais -------
 class ParenthesisToken(Token):
@@ -96,6 +123,15 @@ class RightParenthesisToken(ParenthesisToken):
     def type(self) -> str:
         return ")"
 
+
+class PrintlnToken(Token):
+    def __init__(self) -> None:
+        super().__init__(0)
+    
+    @property
+    def type(self) -> str:
+        return "println"
+    
 
 
 # ------- Token para o final do arquivo (EOF) -------

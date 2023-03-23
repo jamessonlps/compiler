@@ -4,6 +4,10 @@ from tokens import *
 from node import *
 
 
+def is_factor_token(token: Token) -> bool:
+    return isinstance(token, (NumberToken, PlusToken, MinusToken, LeftParenthesisToken, IdentifierToken))
+
+
 class Parser():
     tokenizer: Tokenizer = None
 
@@ -17,7 +21,7 @@ class Parser():
         Parser.tokenizer.selectNext()
         
         # Next instance must be compatible with Factor (num, '+', '-' and '(' )
-        if isinstance(Parser.tokenizer.next, (NumberToken, PlusToken, MinusToken, LeftParenthesisToken)):
+        if is_factor_token(Parser.tokenizer.next):
             term = Parser.parseTerm()
             valid_term = True
             
@@ -27,7 +31,7 @@ class Parser():
             while valid_term:
                 if isinstance(Parser.tokenizer.next, PlusToken):
                     Parser.tokenizer.selectNext()
-                    if isinstance(Parser.tokenizer.next, (NumberToken, PlusToken, MinusToken, LeftParenthesisToken)):
+                    if is_factor_token(Parser.tokenizer.next):
                         term2 = Parser.parseTerm()
                         term = BinUp(value="+", children=[term, term2])
                         # term += Parser.parseTerm()
@@ -36,7 +40,7 @@ class Parser():
                 
                 if isinstance(Parser.tokenizer.next, MinusToken):
                     Parser.tokenizer.selectNext()
-                    if isinstance(Parser.tokenizer.next, (NumberToken, PlusToken, MinusToken, LeftParenthesisToken)):
+                    if is_factor_token(Parser.tokenizer.next):
                         term2 = Parser.parseTerm()
                         term = BinUp(value="-", children=[term, term2])
                         # term -= Parser.parseTerm()
@@ -63,7 +67,7 @@ class Parser():
         """
 
         # Factor can receive '+, '-', number and '(' tokens.
-        if isinstance(Parser.tokenizer.next, (NumberToken, PlusToken, MinusToken, LeftParenthesisToken)):
+        if is_factor_token(Parser.tokenizer.next):
             factor = Parser.parseFactor()
             Parser.tokenizer.selectNext()
             
@@ -74,7 +78,7 @@ class Parser():
             while valid_factor:
                 if isinstance(Parser.tokenizer.next, MultiplicationToken):
                     Parser.tokenizer.selectNext()
-                    if isinstance(Parser.tokenizer.next, (NumberToken, PlusToken, MinusToken, LeftParenthesisToken)):
+                    if is_factor_token(Parser.tokenizer.next):
                         factor2 = Parser.parseFactor()
                         factor = BinUp(value="*", children=[factor, factor2])
                         # factor *= Parser.parseFactor()
@@ -84,7 +88,7 @@ class Parser():
                 
                 if isinstance(Parser.tokenizer.next, DivisionToken):
                     Parser.tokenizer.selectNext()
-                    if isinstance(Parser.tokenizer.next, (NumberToken, PlusToken, MinusToken, LeftParenthesisToken)):
+                    if is_factor_token(Parser.tokenizer.next):
                         factor2 = Parser.parseFactor()
                         factor = BinUp(value="/", children=[factor, factor2])
                         # factor //= Parser.parseFactor()
@@ -127,10 +131,79 @@ class Parser():
             if isinstance(Parser.tokenizer.next, RightParenthesisToken):
                 return expression
             raise SyntaxError("An opened parenthesis must be closed.")
+
+        elif isinstance(Parser.tokenizer.next, IdentifierToken):
+            return IdentifierNode(Parser.tokenizer.next._value)
         
         else:
             raise SyntaxError("Error on parseFactor!")
 
+
+    @staticmethod
+    def parseStatement() -> Node:
+        statement = None
+        token = Parser.tokenizer.next
+        
+        if (isinstance(token, (IdentifierToken, PrintlnToken, BreakLineToken))):
+            if isinstance(token, BreakLineToken):
+                return NoOp()
+            
+            elif isinstance(token, IdentifierToken):
+                identifier_node = IdentifierNode(token._value)
+                
+                Parser.tokenizer.selectNext()
+                
+                if isinstance(Parser.tokenizer.next, EqualsToken):
+                    statement = AssignmentNode()
+                    expression_node = Parser.parseExpression()
+                    
+                    statement.children.append(identifier_node)
+                    statement.children.append(expression_node)
+                else:
+                    raise SyntaxError(f"After identify a variable, you must use '='. Token found: {Parser.tokenizer.next.type}")
+            
+            elif isinstance(token, PrintlnToken):
+                statement = PrintlnNode()
+
+                Parser.tokenizer.selectNext()
+
+                if isinstance(Parser.tokenizer.next, LeftParenthesisToken):
+                    expression_node = Parser.parseExpression()
+                    if isinstance(Parser.tokenizer.next, RightParenthesisToken):
+                        statement.children.append(expression_node)
+                        Parser.tokenizer.selectNext()
+                    else:
+                        raise SyntaxError("You must close an opened parenthesis on the println invocation.")
+                else:
+                    raise SyntaxError("An opening parenthesis is missing on println call.")
+
+            if isinstance(Parser.tokenizer.next, BreakLineToken):
+                return statement
+            raise SyntaxError(f"A statement must to finish with '\\n'. Token found: {Parser.tokenizer.next.type}")
+
+        else:
+            raise SyntaxError(f"Invalid token in parseStatement: {token.type}")
+
+
+    @staticmethod
+    def parseBlock() -> Node:
+        node_master = BlockNode()
+        
+        Parser.tokenizer.selectNext()
+        token = Parser.tokenizer.next
+
+        if (isinstance(token, (IdentifierToken, PrintlnToken, BreakLineToken))):
+            while not (isinstance(token, EndOfFileToken)):
+                statement = Parser.parseStatement()
+                node_master.children.append(statement)
+                Parser.tokenizer.selectNext()
+                token = Parser.tokenizer.next
+        else:
+            raise SyntaxError(f"Invalid first token: {token}")
+        
+        return node_master
+
+        
 
 
     @staticmethod
@@ -139,9 +212,9 @@ class Parser():
         code_processed = PrePro.add_eof(text=remove_comments)
         
         Parser.tokenizer = Tokenizer(source=code_processed)
-        
-        result = Parser.parseExpression().evaluate()
-        print(result)
+
+        result = Parser.parseBlock()
+        result.evaluate()
 
         if isinstance(Parser.tokenizer.next, EndOfFileToken):
             return result

@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from SymbolTable import symbol_table
 from typing import Union
 
 
@@ -8,9 +9,42 @@ class Node(ABC):
     self.children: list[Node] = children
 
   @abstractmethod
-  def evaluate(self) -> int:
-    pass
+  def evaluate(self) -> int | None:
+    return
 
+
+class BlockNode(Node):
+  def __init__(self) -> None:
+    super().__init__(value=0, children=[])
+  
+  def evaluate(self) -> None:
+    for child in self.children:
+      if not isinstance(child, NoOp):
+        child.evaluate()
+
+
+class AssignmentNode(Node):
+  def __init__(self) -> None:
+    super().__init__(value=0, children=[])
+  
+  def evaluate(self):
+    symbol_table.setter(self.children[0].value, self.children[1].evaluate())
+
+
+class PrintlnNode(Node):
+  def __init__(self) -> None:
+    super().__init__(value=0, children=[])
+  
+  def evaluate(self) -> None:
+    print(self.children[0].evaluate())
+
+
+class IdentifierNode(Node):
+  def __init__(self, value: str) -> None:
+    super().__init__(value, children=[])
+  
+  def evaluate(self) -> str:
+    return symbol_table.getter(self.value)
 
 
 class BinUp(Node):

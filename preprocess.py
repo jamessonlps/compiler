@@ -9,8 +9,8 @@ class PrePro():
         @param `text`: str
         """
         removed_comments = re.sub(pattern=r"#.*", repl="", string=text)
-        removed_final_white_spaces = re.sub(pattern=r"\s+$", repl="", string=removed_comments)
-        return removed_final_white_spaces
+        # removed_final_white_spaces = re.sub(pattern=r"\s+$", repl="", string=removed_comments)
+        return removed_comments
 
 
     @staticmethod
