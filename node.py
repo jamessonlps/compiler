@@ -90,8 +90,8 @@ class IntVal(Node):
 
 
 class NoOp(Node):
-  def __init__(self, value, children) -> None:
-    super().__init__(value, children)
+  def __init__(self) -> None:
+    super().__init__(value=None, children=None)
 
   def evaluate(self) -> int:
     pass
