@@ -160,7 +160,7 @@ class Parser():
                     statement.children.append(identifier_node)
                     statement.children.append(expression_node)
                 else:
-                    raise SyntaxError(f"After identify a variable, you must use '='. Token found: {Parser.tokenizer.next.type}")
+                    raise SyntaxError(f"After identify a variable, you must use '='. Token found: {Parser.tokenizer.next.value}")
             
             elif isinstance(token, PrintlnToken):
                 statement = PrintlnNode()
@@ -179,10 +179,10 @@ class Parser():
 
             if isinstance(Parser.tokenizer.next, BreakLineToken):
                 return statement
-            raise SyntaxError(f"A statement must to finish with '\\n'. Token found: {Parser.tokenizer.next.type}")
+            raise SyntaxError(f"A statement must to finish with '\\n'. Token found: {Parser.tokenizer.next.value}")
 
         else:
-            raise SyntaxError(f"Invalid token in parseStatement: {token.type}")
+            raise SyntaxError(f"Invalid token in parseStatement: {token.value}")
 
 
     @staticmethod

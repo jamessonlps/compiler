@@ -1,10 +1,14 @@
-
+from abc import ABC, abstractproperty
 from typing import Union
 
 
-class Token():
+class Token(ABC):
     def __init__(self, value: Union[int, str]) -> None:
         self._value = value
+    
+    @abstractproperty
+    def value(self):
+        return self._value
 
 
 
@@ -16,73 +20,65 @@ class NumberToken(Token):
     @property
     def value(self) -> int:
         return self._value
-    
-    @value.setter
-    def value(self, value) -> int:
-        self._value = value
-
-    @property
-    def type(self) -> str:
-        return "number" 
 
 
 
 # ------- Token que representa sinais de operação -------
 class PlusToken(Token):
     def __init__(self) -> None:
-        super().__init__(0)
+        super().__init__("+")
     
     @property
-    def type(self) -> str:
-        return "+"
+    def value(self) -> str:
+        return self._value
 
 
 
 class MinusToken(Token):
     def __init__(self) -> None:
-        super().__init__(0)
+        super().__init__("-")
     
     @property
-    def type(self) -> str:
-        return "-"
+    def value(self) -> str:
+        return self._value
 
 
 
 class MultiplicationToken(Token):
     def __init__(self) -> None:
-        super().__init__(0)
+        super().__init__("*")
     
     @property
-    def type(self) -> str:
-        return "*"
+    def value(self) -> str:
+        return self._value
 
 
 
 class DivisionToken(Token):
     def __init__(self) -> None:
-        super().__init__(0)
+        super().__init__("/")
     
     @property
-    def type(self) -> str:
-        return "/"
+    def value(self) -> str:
+        return self._value
 
 
 class EqualsToken(Token):
     def __init__(self) -> None:
-        super().__init__(0)
+        super().__init__("=")
     
     @property
-    def type(self) -> str:
-        return "="
+    def value(self) -> str:
+        return self._value
     
 
 class BreakLineToken(Token):
     def __init__(self) -> None:
-        super().__init__(0)
+        super().__init__("\n")
     
     @property
-    def type(self) -> str:
-        return "\n"
+    def value(self) -> str:
+        return self._value
 
 
 class IdentifierToken(Token):
@@ -90,7 +86,7 @@ class IdentifierToken(Token):
         super().__init__(value)
     
     @property
-    def type(self) -> str:
+    def value(self) -> str:
         return self._value
 
 
@@ -101,7 +97,7 @@ class ParenthesisToken(Token):
         super().__init__(0)
 
     @property
-    def type(self) -> str:
+    def value(self) -> str:
         return "Parenthesis"
 
 
@@ -110,7 +106,7 @@ class LeftParenthesisToken(ParenthesisToken):
         super().__init__()
     
     @property
-    def type(self) -> str:
+    def value(self) -> str:
         return "("
 
 
@@ -120,25 +116,25 @@ class RightParenthesisToken(ParenthesisToken):
         super().__init__()
     
     @property
-    def type(self) -> str:
+    def value(self) -> str:
         return ")"
 
 
 class PrintlnToken(Token):
     def __init__(self) -> None:
-        super().__init__(0)
+        super().__init__("println")
     
     @property
-    def type(self) -> str:
-        return "println"
+    def value(self) -> str:
+        return self._value
     
 
 
 # ------- Token para o final do arquivo (EOF) -------
 class EndOfFileToken(Token):
     def __init__(self) -> None:
-        super().__init__(0)
+        super().__init__("\0")
     
     @property
-    def type(self) -> str:
-        return "\0"
+    def value(self) -> str:
+        return self._value
