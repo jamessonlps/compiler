@@ -199,7 +199,7 @@ class Parser():
                 Parser.tokenizer.selectNext()
                 token = Parser.tokenizer.next
         else:
-            raise SyntaxError(f"Invalid first token: {token}")
+            raise SyntaxError(f"Invalid first token: {token._value}")
         
         return node_master
 
