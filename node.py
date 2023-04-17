@@ -49,7 +49,7 @@ class IdentifierNode(Node):
 
 class ReadlineNode(Node):
   def __init__(self) -> None:
-    super().__init__()
+    super().__init__(value="read", children=[])
   
   def evaluate(self) -> int:
     return int(input(""))
