@@ -5,36 +5,74 @@ from node import *
 
 
 def is_factor_token(token: Token) -> bool:
-    return isinstance(token, (NumberToken, PlusToken, MinusToken, LeftParenthesisToken, IdentifierToken))
+    return isinstance(token, (NumberToken, PlusToken, MinusToken, LeftParenthesisToken, IdentifierToken, DenialToken, ReadlineToken))
 
+def is_statement_token(token: Token) -> bool:
+    return isinstance(token, (BreakLineToken, IdentifierToken, PrintlnToken, WhileToken, IfToken))
 
 class Parser():
     tokenizer: Tokenizer = None
 
     @staticmethod
-    def parseExpression() -> Node:
+    def parseRelExpression() -> Node:
         """
         Starting point: get the next token and call parse term.
         """
         
-        # Get the next token
         Parser.tokenizer.selectNext()
         
-        # Next instance must be compatible with Factor (num, '+', '-' and '(' )
+        if is_factor_token(Parser.tokenizer.next):
+            expression = Parser.parseExpression()
+            valid_expression = True
+            
+            while valid_expression:
+                if isinstance(Parser.tokenizer.next, CompareEqualToToken):
+                    Parser.tokenizer.selectNext()
+                    if is_factor_token(Parser.tokenizer.next):
+                        expression2 = Parser.parseTerm()
+                        expression = BinUp(value="==", children=[expression, expression2])
+                    else:
+                        raise SyntaxError("After '==', the next token shoud be a valid factor token, but received: ", Parser.tokenizer.next)
+                
+                if isinstance(Parser.tokenizer.next, CompareGreaterThenToken):
+                    Parser.tokenizer.selectNext()
+                    if is_factor_token(Parser.tokenizer.next):
+                        expression2 = Parser.parseTerm()
+                        expression = BinUp(value=">", children=[expression, expression2])
+                    else:
+                        raise SyntaxError("After '>', the next token shoud be a valid factor token, but received: ", Parser.tokenizer.next)
+                
+                if isinstance(Parser.tokenizer.next, CompareLessThenToken):
+                    Parser.tokenizer.selectNext()
+                    if is_factor_token(Parser.tokenizer.next):
+                        expression2 = Parser.parseTerm()
+                        expression = BinUp(value="<", children=[expression, expression2])
+                    else:
+                        raise SyntaxError("After '<', the next token shoud be a valid factor token, but received: ", Parser.tokenizer.next)
+                
+                if isinstance(Parser.tokenizer.next, (CompareEqualToToken, CompareLessThenToken, CompareGreaterThenToken)):
+                    pass
+                else:
+                    valid_expression = False
+
+            return expression
+        else:
+            raise SyntaxError(f"Error on parseExpression. Token received: {Parser.tokenizer.next._value}")
+
+
+    @staticmethod
+    def parseExpression() -> Node:
+        
         if is_factor_token(Parser.tokenizer.next):
             term = Parser.parseTerm()
             valid_term = True
             
-            # After receive the result from parse term, the next token
-            # must be '+', '-' or none (return the term calculated), following
-            # by another term when we request the next token.
             while valid_term:
                 if isinstance(Parser.tokenizer.next, PlusToken):
                     Parser.tokenizer.selectNext()
                     if is_factor_token(Parser.tokenizer.next):
                         term2 = Parser.parseTerm()
                         term = BinUp(value="+", children=[term, term2])
-                        # term += Parser.parseTerm()
                     else:
                         raise SyntaxError
                 
@@ -43,12 +81,18 @@ class Parser():
                     if is_factor_token(Parser.tokenizer.next):
                         term2 = Parser.parseTerm()
                         term = BinUp(value="-", children=[term, term2])
-                        # term -= Parser.parseTerm()
                     else:
                         raise SyntaxError
                 
-                if isinstance(Parser.tokenizer.next, (PlusToken, MinusToken)):
-                    # Parser.tokenizer.selectNext()
+                if isinstance(Parser.tokenizer.next, LogicOrToken):
+                    Parser.tokenizer.selectNext()
+                    if is_factor_token(Parser.tokenizer.next):
+                        term2 = Parser.parseTerm()
+                        term = BinUp(value="||", children=[term, term2])
+                    else:
+                        raise SyntaxError("After '||', the next token shoud be a factor valid token, but received: ", Parser.tokenizer.next)
+                
+                if isinstance(Parser.tokenizer.next, (PlusToken, MinusToken, LogicOrToken)):
                     pass
                 else:
                     valid_term = False
@@ -61,19 +105,11 @@ class Parser():
 
     @staticmethod
     def parseTerm() -> Node:
-        """
-        Call `parseFactor` and apply multiplication and division
-        if necessary.
-        """
 
-        # Factor can receive '+, '-', number and '(' tokens.
         if is_factor_token(Parser.tokenizer.next):
             factor = Parser.parseFactor()
             Parser.tokenizer.selectNext()
             
-            # After receive the result from parse factor, the next token
-            # must be '*', '/' or none (return the factor calculated), following
-            # by another factor when we request the next token.
             valid_factor = True
             while valid_factor:
                 if isinstance(Parser.tokenizer.next, MultiplicationToken):
@@ -81,7 +117,6 @@ class Parser():
                     if is_factor_token(Parser.tokenizer.next):
                         factor2 = Parser.parseFactor()
                         factor = BinUp(value="*", children=[factor, factor2])
-                        # factor *= Parser.parseFactor()
                         Parser.tokenizer.selectNext()
                     else:
                         raise SyntaxError("Multiplication Error")
@@ -91,12 +126,20 @@ class Parser():
                     if is_factor_token(Parser.tokenizer.next):
                         factor2 = Parser.parseFactor()
                         factor = BinUp(value="/", children=[factor, factor2])
-                        # factor //= Parser.parseFactor()
                         Parser.tokenizer.selectNext()
                     else:
                         raise SyntaxError("Division Error")
                 
-                if not isinstance(Parser.tokenizer.next, (MultiplicationToken, DivisionToken)):
+                if isinstance(Parser.tokenizer.next, LogicAndToken):
+                    Parser.tokenizer.selectNext()
+                    if is_factor_token(Parser.tokenizer.next):
+                        factor2 = Parser.parseFactor()
+                        factor = BinUp(value="&&", children=[factor, factor2])
+                        Parser.tokenizer.selectNext()
+                    else:
+                        raise SyntaxError("Logical AND operator error")
+                
+                if not isinstance(Parser.tokenizer.next, (MultiplicationToken, DivisionToken, LogicAndToken)):
                     valid_factor = False
                 
             return factor
@@ -107,11 +150,6 @@ class Parser():
 
     @staticmethod
     def parseFactor() -> Node:
-        """
-        A factor must start with `number`, `+`, `-` or `(`.
-        Then, can call `parseFactor` or `parseExpression` to calculate
-        the return value.
-        """
         if isinstance(Parser.tokenizer.next, NumberToken):
             return IntVal(value=Parser.tokenizer.next.value)
             # return Parser.tokenizer.next.value
@@ -127,13 +165,30 @@ class Parser():
             return UnOp(value="-", children=[factor])
         
         elif isinstance(Parser.tokenizer.next, LeftParenthesisToken):
-            expression = Parser.parseExpression()
+            rel_expression = Parser.parseRelExpression()
             if isinstance(Parser.tokenizer.next, RightParenthesisToken):
-                return expression
+                return rel_expression
             raise SyntaxError("An opened parenthesis must be closed.")
 
         elif isinstance(Parser.tokenizer.next, IdentifierToken):
             return IdentifierNode(Parser.tokenizer.next._value)
+
+        elif isinstance(Parser.tokenizer.next, DenialToken):
+            Parser.tokenizer.selectNext()
+            factor = Parser.parseFactor()
+            return UnOp(value="!", children=[factor])
+        
+        elif isinstance(Parser.tokenizer.next, ReadlineToken):
+            read_line = ReadlineNode()
+            Parser.tokenizer.selectNext()
+            if isinstance(Parser.tokenizer.next, LeftParenthesisToken):
+                Parser.tokenizer.selectNext()
+                if isinstance(Parser.tokenizer.next, RightParenthesisToken):
+                    return read_line
+                else:
+                    raise SyntaxError("You must close an opened parenthesis on a readline function.")
+            else:
+                raise SyntaxError("After declare a readline function, you must use an open parenthesis.")
         
         else:
             raise SyntaxError("Error on parseFactor!")
@@ -142,47 +197,111 @@ class Parser():
     @staticmethod
     def parseStatement() -> Node:
         statement = None
-        token = Parser.tokenizer.next
         
-        if (isinstance(token, (IdentifierToken, PrintlnToken, BreakLineToken))):
-            if isinstance(token, BreakLineToken):
+        if (isinstance(Parser.tokenizer.next, (IdentifierToken, PrintlnToken, BreakLineToken, WhileToken, IfToken))):
+            if isinstance(Parser.tokenizer.next, BreakLineToken):
                 return NoOp()
             
-            elif isinstance(token, IdentifierToken):
-                identifier_node = IdentifierNode(token._value)
+            elif isinstance(Parser.tokenizer.next, IdentifierToken):
+                identifier_node = IdentifierNode(Parser.tokenizer.next._value)
                 
                 Parser.tokenizer.selectNext()
                 
                 if isinstance(Parser.tokenizer.next, EqualsToken):
                     statement = AssignmentNode()
-                    expression_node = Parser.parseExpression()
+                    rel_expression_node = Parser.parseRelExpression()
                     
                     statement.children.append(identifier_node)
-                    statement.children.append(expression_node)
+                    statement.children.append(rel_expression_node)
                 else:
                     raise SyntaxError(f"After identify a variable, you must use '='. Token found: {Parser.tokenizer.next.value}")
             
-            elif isinstance(token, PrintlnToken):
+            elif isinstance(Parser.tokenizer.next, PrintlnToken):
                 statement = PrintlnNode()
 
                 Parser.tokenizer.selectNext()
 
                 if isinstance(Parser.tokenizer.next, LeftParenthesisToken):
-                    expression_node = Parser.parseExpression()
+                    rel_expression_node = Parser.parseRelExpression()
                     if isinstance(Parser.tokenizer.next, RightParenthesisToken):
-                        statement.children.append(expression_node)
+                        statement.children.append(rel_expression_node)
                         Parser.tokenizer.selectNext()
                     else:
                         raise SyntaxError("You must close an opened parenthesis on the println invocation.")
                 else:
                     raise SyntaxError("An opening parenthesis is missing on println call.")
+                
+            elif isinstance(Parser.tokenizer.next, WhileToken):
+                statement = WhileNode()
+                
+                rel_expression_node = Parser.parseRelExpression()
+                statement.children.append(rel_expression_node)
+
+                if isinstance(Parser.tokenizer.next, BreakLineToken):
+                    Parser.tokenizer.selectNext()
+                    block = BlockNode()
+
+                    while is_statement_token(Parser.tokenizer.next):
+                        statement_loop = Parser.parseStatement()
+                        block.children.append(statement_loop)
+                        Parser.tokenizer.selectNext()
+                    
+                    if isinstance(Parser.tokenizer.next, EndIfToken):
+                        Parser.tokenizer.selectNext()
+                        statement.children.append(block)
+                    else:
+                        raise SyntaxError(f"You must finish a while looping with 'end'. Received: {Parser.tokenizer.next._value}")
+                else:
+                    raise SyntaxError(f"After while conditional you must use a break line token. Received: {Parser.tokenizer.next._value}", )
+
+
+            elif isinstance(Parser.tokenizer.next, IfToken):
+                statement = ConditionalNode("if")
+
+                rel_expression_node = Parser.parseRelExpression()
+                statement.children.append(rel_expression_node)
+
+                if isinstance(Parser.tokenizer.next, BreakLineToken):
+                    Parser.tokenizer.selectNext()
+                    block = BlockNode()
+
+                    while is_statement_token(Parser.tokenizer.next):
+                        statement_loop = Parser.parseStatement()
+                        block.children.append(statement_loop)
+                        Parser.tokenizer.selectNext()
+
+                    statement.children.append(block)
+                    
+                    # Após statement, pode vir ou não um 'else', seguindo do 'end'.
+                    if isinstance(Parser.tokenizer.next, ElseToken):
+                        else_statement = ConditionalNode("else")
+
+                        Parser.tokenizer.selectNext()
+
+                        if isinstance(Parser.tokenizer.next, BreakLineToken):
+                            Parser.tokenizer.selectNext()
+
+                            while is_statement_token(Parser.tokenizer.next):
+                                else_statement_loop = Parser.parseStatement()
+                                else_statement.children.append(else_statement_loop)
+                                Parser.tokenizer.selectNext()
+
+                            statement.children.append(else_statement)
+                        else:
+                            raise SyntaxError(f"After 'else' conditional you must use a break line token. Received: {Parser.tokenizer.next._value}")
+                    
+                    # Após ou não o 'else', vem o 'end'
+                    if isinstance(Parser.tokenizer.next, EndIfToken):
+                        Parser.tokenizer.selectNext()
+                    else:
+                        raise SyntaxError(f"You must finish a 'if' looping with 'end'. Received: {Parser.tokenizer.next._value}")
 
             if isinstance(Parser.tokenizer.next, BreakLineToken):
                 return statement
-            raise SyntaxError(f"A statement must to finish with '\\n'. Token found: {Parser.tokenizer.next.value}")
+            raise SyntaxError(f"A statement must to finish with '\\n'. Token found: {Parser.tokenizer.next._value}")
 
         else:
-            raise SyntaxError(f"Invalid token in parseStatement: {token.value}")
+            raise SyntaxError(f"Invalid token in parseStatement: {Parser.tokenizer.next._value}")
 
 
     @staticmethod

@@ -2,7 +2,12 @@ from tokens import *
 
 
 reserveds = {
-    "println": PrintlnToken
+    "println": PrintlnToken,
+    "readline": ReadlineToken,
+    "while": WhileToken,
+    "if": IfToken,
+    "else": ElseToken,
+    "end": EndIfToken
 }
 
 
@@ -62,6 +67,36 @@ class Tokenizer():
         if (current_token.isalpha()):
             self._get_identifier_token(current_token=current_token)
         
+        elif current_token == "&":
+            self.position += 1
+            current_token = self.source[self.position]
+            if current_token == "&":
+                self.next = LogicAndToken()
+                self.position += 1
+            else:
+                raise TypeError("Invalid token. Did you mean '&&'?")
+        
+        elif current_token == "|":
+            self.position += 1
+            current_token = self.source[self.position]
+            if current_token == "|":
+                self.next = LogicOrToken()
+                self.position += 1
+            else:
+                raise TypeError("Invalid token. Did you mean '||'?")
+        
+        elif current_token == "=":
+            self.position += 1
+            current_token = self.source[self.position]
+            if current_token == "=":
+                self.next = CompareEqualToToken()
+                self.position += 1
+            elif current_token.isspace():
+                self.next = EqualsToken()
+                self.position += 1
+            else:
+                raise TypeError("Invalid token. Token received after '=': ", current_token)
+        
         elif current_token == "\n":
             self.next = BreakLineToken()
             self.position += 1
@@ -69,9 +104,9 @@ class Tokenizer():
         elif current_token.isdigit():
             self._get_number_token(current_token=current_token)
         
-        elif current_token == "=":
-            self.next = EqualsToken()
-            self.position += 1
+        # elif current_token == "=":
+        #     self.next = EqualsToken()
+        #     self.position += 1
         
         
         elif current_token == "+":
@@ -88,6 +123,18 @@ class Tokenizer():
         
         elif current_token == "/":
             self.next = DivisionToken()
+            self.position += 1
+        
+        elif current_token == "!":
+            self.next = DenialToken()
+            self.position += 1
+        
+        elif current_token == "<":
+            self.next = CompareLessThenToken()
+            self.position += 1
+        
+        elif current_token == ">":
+            self.next = CompareGreaterThenToken()
             self.position += 1
         
         elif current_token == "(":

@@ -63,6 +63,15 @@ class DivisionToken(Token):
         return self._value
 
 
+class DenialToken(Token):
+    def __init__(self) -> None:
+        super().__init__("!")
+    
+    @property
+    def value(self) -> str:
+        return self._value
+
+
 class EqualsToken(Token):
     def __init__(self) -> None:
         super().__init__("=")
@@ -110,6 +119,50 @@ class LeftParenthesisToken(ParenthesisToken):
         return "("
 
 
+class CompareEqualToToken(Token):
+    def __init__(self) -> None:
+        super().__init__("==")
+    
+    @property
+    def value(self) -> str:
+        return self._value
+
+
+class CompareLessThenToken(Token):
+    def __init__(self) -> None:
+        super().__init__("<")
+    
+    @property
+    def value(self) -> str:
+        return self._value
+
+
+class CompareGreaterThenToken(Token):
+    def __init__(self) -> None:
+        super().__init__(">")
+    
+    @property
+    def value(self) -> str:
+        return self._value
+
+
+class LogicOrToken(Token):
+    def __init__(self) -> None:
+        super().__init__("||")
+    
+    @property
+    def value(self) -> str:
+        return self._value
+
+
+class LogicAndToken(Token):
+    def __init__(self) -> None:
+        super().__init__("&&")
+    
+    @property
+    def value(self) -> str:
+        return self._value
+
 
 class RightParenthesisToken(ParenthesisToken):
     def __init__(self) -> None:
@@ -128,6 +181,51 @@ class PrintlnToken(Token):
     def value(self) -> str:
         return self._value
     
+
+class ReadlineToken(Token):
+    def __init__(self) -> None:
+        return super().__init__("readline")
+
+    @property
+    def value(self) -> str:
+        return self._value
+
+
+# ------- Tokens para loopings e condicionais -------
+class WhileToken(Token):
+    def __init__(self) -> None:
+        return super().__init__("while")
+
+    @property
+    def value(self) -> str:
+        return self._value
+
+
+class IfToken(Token):
+    def __init__(self) -> None:
+        return super().__init__("if")
+
+    @property
+    def value(self) -> str:
+        return self._value
+
+
+class ElseToken(Token):
+    def __init__(self) -> None:
+        return super().__init__("else")
+
+    @property
+    def value(self) -> str:
+        return self._value
+
+
+class EndIfToken(Token):
+    def __init__(self) -> None:
+        return super().__init__("end")
+
+    @property
+    def value(self) -> str:
+        return self._value
 
 
 # ------- Token para o final do arquivo (EOF) -------
