@@ -55,7 +55,7 @@ class ReadlineNode(Node):
   def __init__(self) -> None:
     super().__init__(value="read", children=[])
   
-  def evaluate(self) -> int:
+  def evaluate(self) -> TypeValue:
     return TypeValue("Int", int(input(""))) 
 
 
@@ -89,12 +89,6 @@ class BinUp(Node):
     super().__init__(value=value, children=children)
 
   def evaluate(self) -> TypeValue:
-    type_left = self.children[0].evaluate().type
-    type_right = self.children[1].evaluate().type
-
-    if type_left != type_right:
-      raise SyntaxError(f"You cannot perform operations with different types: {type_left} and {type_right}")
-    
     left = self.children[0].evaluate().value
     right = self.children[1].evaluate().value
     
@@ -120,8 +114,6 @@ class BinUp(Node):
     elif (self.value == "||"):
       return TypeValue("Int", left or right)
     elif (self.value == "."):
-      if not isinstance(left, str) or not isinstance(right, str):
-        raise SyntaxError(f"Cannot concatenate non-string values: {type_left} and {type_right}")
       return TypeValue("String", str(left) + str(right))
     raise SyntaxError("Cannot evaluate a bin operation:", left, self.value, right)
   
@@ -133,11 +125,11 @@ class UnOp(Node):
 
   def evaluate(self) -> TypeValue:
     if (self.value == "+"):
-      return self.children[0].evaluate()
+      return TypeValue("Int", self.children[0].evaluate().value)
     elif (self.value == "-"):
-      return -self.children[0].evaluate()
+      return TypeValue("Int", -self.children[0].evaluate().value)
     elif (self.value == "!"):
-      return not self.children[0].evaluate()
+      return TypeValue("Int", not self.children[0].evaluate().value)
     else:
       raise SyntaxError("Invalid unary operation: value = ", self.value)
 

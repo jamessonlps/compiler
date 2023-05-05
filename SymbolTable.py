@@ -32,8 +32,9 @@ class SymbolTable:
     _type, _value = value.instance
     if key not in self._table.keys():
       raise SyntaxError(f"Item {key} not found or not declared")
-    if (_type == "Int" and type(_value) != int) or (_type == "String" and type(_value) != str):
-      raise SyntaxError(f"Type mismatch: {_type} != {type(_value)}")
+    type_in_table = self._table[key].type
+    if (type_in_table != _type):
+      raise SyntaxError(f"Type mismatch: {_type} != {type_in_table}")
     self._table[key] = value
 
 
