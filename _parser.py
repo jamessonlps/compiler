@@ -5,7 +5,7 @@ from node import *
 
 
 def is_factor_token(token: Token) -> bool:
-    return isinstance(token, (NumberToken, PlusToken, MinusToken, LeftParenthesisToken, IdentifierToken, DenialToken, ReadlineToken))
+    return isinstance(token, (NumberToken, PlusToken, MinusToken, LeftParenthesisToken, IdentifierToken, DenialToken, ReadlineToken, StringToken))
 
 def is_statement_token(token: Token) -> bool:
     return isinstance(token, (BreakLineToken, IdentifierToken, PrintlnToken, WhileToken, IfToken))
@@ -138,6 +138,15 @@ class Parser():
                         Parser.tokenizer.selectNext()
                     else:
                         raise SyntaxError("Logical AND operator error")
+                    
+                elif isinstance(Parser.tokenizer.next, DotToken):
+                    Parser.tokenizer.selectNext()
+                    if is_factor_token(Parser.tokenizer.next):
+                        factor2 = Parser.parseFactor()
+                        factor = BinUp(value=".", children=[factor, factor2])
+                        Parser.tokenizer.selectNext()
+                    else:
+                        raise SyntaxError("String concatenation error")
                 
                 if not isinstance(Parser.tokenizer.next, (MultiplicationToken, DivisionToken, LogicAndToken)):
                     valid_factor = False
@@ -152,7 +161,9 @@ class Parser():
     def parseFactor() -> Node:
         if isinstance(Parser.tokenizer.next, NumberToken):
             return IntVal(value=Parser.tokenizer.next.value)
-            # return Parser.tokenizer.next.value
+        
+        elif isinstance(Parser.tokenizer.next, StringToken):
+            return StrVal(value=Parser.tokenizer.next.value)
         
         elif isinstance(Parser.tokenizer.next, PlusToken):
             Parser.tokenizer.selectNext()
@@ -213,8 +224,23 @@ class Parser():
                     
                     statement.children.append(identifier_node)
                     statement.children.append(rel_expression_node)
+                
+                elif isinstance(Parser.tokenizer.next, VariableDeclarationToken):
+                    Parser.tokenizer.selectNext()
+                    
+                    if not isinstance(Parser.tokenizer.next, (IntegerTypeToken, StringTypeToken)):
+                        raise SyntaxError(f"After declare a variable, you must use a type. Token found: {Parser.tokenizer.next._value}")
+                    
+                    statement = VariableDeclarationNode(Parser.tokenizer.next._value)
+                    statement.children.append(identifier_node)
+                    Parser.tokenizer.selectNext()
+                    
+                    # Declaração de variável com atribuição
+                    if isinstance(Parser.tokenizer.next, EqualsToken):
+                        rel_expression_node = Parser.parseRelExpression()
+                        statement.children.append(rel_expression_node)
                 else:
-                    raise SyntaxError(f"After identify a variable, you must use '='. Token found: {Parser.tokenizer.next.value}")
+                    raise SyntaxError(f"Invalid token after identifier: {Parser.tokenizer.next._value}")
             
             elif isinstance(Parser.tokenizer.next, PrintlnToken):
                 statement = PrintlnNode()

@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from SymbolTable import symbol_table
 from typing import Union
+from _types import TypeValue
 
 
 class Node(ABC):
@@ -9,8 +10,8 @@ class Node(ABC):
     self.children: list[Node] = children
 
   @abstractmethod
-  def evaluate(self) -> Union[int, None]:
-    return
+  def evaluate(self) -> TypeValue:
+    ...
 
 
 class BlockNode(Node):
@@ -27,8 +28,11 @@ class AssignmentNode(Node):
   def __init__(self) -> None:
     super().__init__(value=0, children=[])
   
-  def evaluate(self):
-    symbol_table.setter(self.children[0].value, self.children[1].evaluate())
+  def evaluate(self) -> None:
+    symbol_table.setter(
+      key=self.children[0].value, 
+      value=self.children[1].evaluate()
+    )
 
 
 class PrintlnNode(Node):
@@ -36,7 +40,7 @@ class PrintlnNode(Node):
     super().__init__(value=0, children=[])
   
   def evaluate(self) -> None:
-    print(self.children[0].evaluate())
+    print(self.children[0].evaluate().value)
 
 
 class IdentifierNode(Node):
@@ -52,7 +56,7 @@ class ReadlineNode(Node):
     super().__init__(value="read", children=[])
   
   def evaluate(self) -> int:
-    return int(input(""))
+    return TypeValue("Int", int(input(""))) 
 
 
 class WhileNode(Node):
@@ -60,7 +64,7 @@ class WhileNode(Node):
     super().__init__("while", children=[])
   
   def evaluate(self):
-    while (self.children[0].evaluate()):
+    while (self.children[0].evaluate().value == 1):
       self.children[1].evaluate()
     
 
@@ -73,7 +77,7 @@ class ConditionalNode(Node):
     if self.value == "else":
       self.children[0].evaluate()
     # Se for if, resolve se a condição em children[0] for True
-    elif (self.children[0].evaluate()):
+    elif (self.children[0].evaluate().value == 1):
       self.children[1].evaluate()
     # Se a anterior é False e há um else, resolve em children[2]
     elif (len(self.children) >= 3):
@@ -84,27 +88,41 @@ class BinUp(Node):
   def __init__(self, value, children) -> None:
     super().__init__(value=value, children=children)
 
-  def evaluate(self) -> Union[int, bool]:
-    left = self.children[0].evaluate()
-    right = self.children[1].evaluate()
+  def evaluate(self) -> TypeValue:
+    type_left = self.children[0].evaluate().type
+    type_right = self.children[1].evaluate().type
+
+    if type_left != type_right:
+      raise SyntaxError(f"You cannot perform operations with different types: {type_left} and {type_right}")
+    
+    left = self.children[0].evaluate().value
+    right = self.children[1].evaluate().value
+    
     if self.value == "+":
-      return left + right
+      return TypeValue("Int", left + right)
     elif self.value == "-":
-      return left - right
+      return TypeValue("Int", left - right)
     elif self.value == "*":
-      return left * right
+      return TypeValue("Int", left * right)
     elif (self.value == "/"):
-      return left // right
+      return TypeValue("Int", left // right)
     elif (self.value == "=="):
-      return left == right
+      result = 1 if left == right else 0
+      return TypeValue("Int", result)
     elif (self.value == ">"):
-      return left > right
+      result = 1 if left > right else 0
+      return TypeValue("Int", result)
     elif (self.value == "<"):
-      return left < right
+      result = 1 if left < right else 0
+      return TypeValue("Int", result)
     elif (self.value == "&&"):
-      return left and right
+      return TypeValue("Int", left and right)
     elif (self.value == "||"):
-      return left or right
+      return TypeValue("Int", left or right)
+    elif (self.value == "."):
+      if not isinstance(left, str) or not isinstance(right, str):
+        raise SyntaxError(f"Cannot concatenate non-string values: {type_left} and {type_right}")
+      return TypeValue("String", str(left) + str(right))
     raise SyntaxError("Cannot evaluate a bin operation:", left, self.value, right)
   
 
@@ -113,7 +131,7 @@ class UnOp(Node):
   def __init__(self, value, children) -> None:
     super().__init__(value, children)
 
-  def evaluate(self) -> int:
+  def evaluate(self) -> TypeValue:
     if (self.value == "+"):
       return self.children[0].evaluate()
     elif (self.value == "-"):
@@ -129,9 +147,16 @@ class IntVal(Node):
   def __init__(self, value: int) -> None:
     super().__init__(value, children=[])
   
-  def evaluate(self) -> int:
-    return self.value
+  def evaluate(self) -> TypeValue:
+    return TypeValue("Int", self.value)
 
+
+class StrVal(Node):
+  def __init__(self, value: str) -> None:
+    super().__init__(value, children=[])
+  
+  def evaluate(self) -> TypeValue:
+    return TypeValue("String", self.value)
 
 
 class NoOp(Node):
@@ -140,3 +165,24 @@ class NoOp(Node):
 
   def evaluate(self) -> int:
     pass
+
+
+class VariableDeclarationNode(Node):
+  """
+  @param `value`: type of the variable
+  """
+  def __init__(self, value: str) -> None:
+    super().__init__(value=value, children=[])
+  
+  def evaluate(self) -> None:
+    if len(self.children) > 1:
+      item = TypeValue(self.value, self.children[1].evaluate().value)
+      symbol_table.create(self.children[0].value, item)
+    else:
+      if self.value == "Int":
+        item = TypeValue(self.value, 0)
+      elif self.value == "String":
+        item = TypeValue(self.value, "")
+      else:
+        raise SyntaxError(f"Invalid type of variable declaration: {self.value} :: {self.children[0].value}")
+      symbol_table.create(self.children[0].value, item)

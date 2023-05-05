@@ -7,7 +7,9 @@ reserveds = {
     "while": WhileToken,
     "if": IfToken,
     "else": ElseToken,
-    "end": EndIfToken
+    "end": EndIfToken,
+    "Int": IntegerTypeToken,
+    "String": StringTypeToken,
 }
 
 
@@ -66,6 +68,19 @@ class Tokenizer():
         
         if (current_token.isalpha()):
             self._get_identifier_token(current_token=current_token)
+
+        elif current_token == "\"":
+            self.position += 1
+            current_token = self.source[self.position]
+            string = ""
+            while (current_token != "\""):
+                string += current_token
+                self.position += 1
+                current_token = self.source[self.position]
+                if self.position == self._source_size:
+                    raise TypeError("Invalid string. Did you forget to close it?")
+            self.next = StringToken(value=string)
+            self.position += 1
         
         elif current_token == "&":
             self.position += 1
@@ -75,6 +90,15 @@ class Tokenizer():
                 self.position += 1
             else:
                 raise TypeError("Invalid token. Did you mean '&&'?")
+        
+        elif current_token == ":":
+            self.position += 1
+            current_token = self.source[self.position]
+            if current_token == ":":
+                self.next = VariableDeclarationToken()
+                self.position += 1
+            else:
+                raise TypeError("Invalid token. Did you mean '::'?")
         
         elif current_token == "|":
             self.position += 1
@@ -111,6 +135,10 @@ class Tokenizer():
         
         elif current_token == "+":
             self.next = PlusToken()
+            self.position += 1
+        
+        elif current_token == ".":
+            self.next = DotToken()
             self.position += 1
         
         elif current_token == "-":

@@ -22,6 +22,50 @@ class NumberToken(Token):
         return self._value
 
 
+class StringToken(Token):
+    def __init__(self, value: str) -> None:
+        super().__init__(value)
+    
+    @property
+    def value(self) -> str:
+        return self._value
+
+
+class VariableDeclarationToken(Token):
+    def __init__(self) -> None:
+        super().__init__("::")
+    
+    @property
+    def value(self) -> str:
+        return self._value
+
+
+class TypeVariableToken(Token):
+    def __init__(self, value: str) -> None:
+        super().__init__(value)
+    
+    @property
+    def value(self) -> str:
+        return self._value
+
+
+class IntegerTypeToken(TypeVariableToken):
+    def __init__(self) -> None:
+        super().__init__("Int")
+    
+    @property
+    def value(self) -> str:
+        return self._value
+    
+
+class StringTypeToken(TypeVariableToken):
+    def __init__(self) -> None:
+        super().__init__("String")
+    
+    @property
+    def value(self) -> str:
+        return self._value
+
 
 # ------- Token que representa sinais de operação -------
 class PlusToken(Token):
@@ -98,6 +142,14 @@ class IdentifierToken(Token):
     def value(self) -> str:
         return self._value
 
+
+class DotToken(Token):
+    def __init__(self) -> None:
+        super().__init__(".")
+    
+    @property
+    def value(self) -> str:
+        return self._value
 
 
 # ------- Tokens de outros sinais -------
