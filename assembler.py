@@ -97,8 +97,10 @@ class Assembler():
   """
 
   @staticmethod
-  def write(text: str, filename: str = "out", path: str = "./") -> None:
+  def write(text: str, filename: str = "out", path: str = "./") -> str:
+    content = Assembler.header + text + Assembler.footer
     with open(file=f"{path}/{filename}.asm", mode="w+") as file:
-      file.write(Assembler.header + text + Assembler.footer)
+      file.write(content)
+    return content
 
 assembler = Assembler()

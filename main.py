@@ -13,4 +13,6 @@ if __name__ == "__main__":
     lines_without_spaces = [line.strip() for line in lines]
     code_without_spaces = "\n".join(lines_without_spaces)
 
-    assembler.write(code_without_spaces, filename=filename)
+    asm = assembler.write(code_without_spaces, filename=filename)
+
+    print(asm)
