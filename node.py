@@ -3,14 +3,19 @@ from SymbolTable import symbol_table
 from typing import Union
 from _types import TypeValue
 
+class IdGenerator:
+  counter = 0
+
 
 class Node(ABC):
   def __init__(self, value: Union[int, str], children) -> None:
     self.value: Union[int, str] = value
     self.children: list[Node] = children
+    self.id = IdGenerator.counter
+    IdGenerator.counter += 1
 
   @abstractmethod
-  def evaluate(self) -> TypeValue:
+  def evaluate(self) -> Union[str, None]:
     ...
 
 
@@ -18,29 +23,52 @@ class BlockNode(Node):
   def __init__(self) -> None:
     super().__init__(value=0, children=[])
   
-  def evaluate(self) -> None:
+  def evaluate(self) -> str:
+    block = ""
     for child in self.children:
       if not isinstance(child, NoOp):
-        child.evaluate()
+        block += child.evaluate()
+    return block
 
 
 class AssignmentNode(Node):
+  """
+  @param `value`: 
+  @param `children`: [0] = Identifier, [1] = RelExpression
+  """
   def __init__(self) -> None:
     super().__init__(value=0, children=[])
   
-  def evaluate(self) -> None:
-    symbol_table.setter(
-      key=self.children[0].value, 
-      value=self.children[1].evaluate()
-    )
+  def evaluate(self) -> str:
+    if isinstance(self.children[1], (IntVal, AssignmentNode)):
+      return f"""
+        ; Assignment: {self.children[0].value}
+        MOV EBX, {self.children[1].evaluate()}
+        MOV {self.children[0].evaluate()}, EBX
+      """
+    else:
+      return f"""
+        ; Assignment: {self.children[0].value}
+        {self.children[1].evaluate()}
+        MOV {self.children[0].evaluate()}, EBX
+      """
 
 
 class PrintlnNode(Node):
+  """
+  @param `value`: value to be printed (`rel_expression`)
+  @param `children`: [0] = rel_expression
+  """
   def __init__(self) -> None:
     super().__init__(value=0, children=[])
   
-  def evaluate(self) -> None:
-    print(self.children[0].evaluate().value)
+  def evaluate(self) -> str:
+    return f"""
+      ; Println
+      PUSH EBX
+      CALL print
+      POP EBX
+    """
 
 
 class IdentifierNode(Node):
@@ -48,7 +76,7 @@ class IdentifierNode(Node):
     super().__init__(value, children=[])
   
   def evaluate(self) -> str:
-    return symbol_table.getter(self.value)
+    return f"[EBP-{symbol_table.getter(self.value)}]"
 
 
 class ReadlineNode(Node):
@@ -60,118 +88,188 @@ class ReadlineNode(Node):
 
 
 class WhileNode(Node):
+  """
+  @param `value`: "while"
+  @param `children`: [0] = BinOp, [1]+ = Block
+  """
   def __init__(self) -> None:
     super().__init__("while", children=[])
   
-  def evaluate(self):
-    while (self.children[0].evaluate().value == 1):
-      self.children[1].evaluate()
+  def evaluate(self) -> str:
+    return f"""
+      ; While
+      LOOP_{self.id}:
+      {self.children[0].evaluate()}
+      CMP EBX, False
+      JE EXIT_{self.id}
+      {self.children[1].evaluate()}
+      JMP LOOP_{self.id}
+      EXIT_{self.id}:
+    """
     
 
 class ConditionalNode(Node):
+  """
+  @param `value`: "if" or "else"
+  @param `children`: [0] = BinOp, [1] = Block, [2] = Block (else)
+  """
   def __init__(self, value: str) -> None:
     super().__init__(value, children=[])
   
-  def evaluate(self):
-    # Após o else não há nenhuma condicional
+  def evaluate(self) -> str:
+    # After else, there is no more children
     if self.value == "else":
-      self.children[0].evaluate()
-    # Se for if, resolve se a condição em children[0] for True
-    elif (self.children[0].evaluate().value == 1):
-      self.children[1].evaluate()
-    # Se a anterior é False e há um else, resolve em children[2]
-    elif (len(self.children) >= 3):
-      self.children[2].evaluate()
+      else_block = ""
+      for child in self.children:
+        if not isinstance(child, NoOp):
+          else_block += child.evaluate()
+      return else_block
+    elif len(self.children) > 2:
+      return f"""
+        ; if/else => if
+        CONDITION_{self.id}:
+        {self.children[0].evaluate()}
+        CMP EBX, False
+        JE CONDITION_{self.children[2].id}
+        {self.children[1].evaluate()}
+        JMP CONDITION_{self.id}
+
+        ; if/else => else
+        CONDITION_{self.children[2].id}:
+        {self.children[2].evaluate()}
+      """
+    else:
+      return f"""
+        ; if
+        CONDITION_{self.id}:
+        {self.children[0].evaluate()}
+        CMP EBX, False
+        JE EXIT_{self.id}
+        {self.children[1].evaluate()}
+        JMP CONDITION_{self.id}
+        EXIT_{self.id}:
+      """
 
 
 class BinUp(Node):
+  """
+  @param `value`: operator
+  @param `children`: [0] = left operand (expression), [1] = right operand (expression)
+  
+  """
   def __init__(self, value, children) -> None:
     super().__init__(value=value, children=children)
 
-  def evaluate_int(self, left, right) -> TypeValue:
-    """
-    Evaluate a binary operation between two integers
-    """
+  def evaluate(self) -> str:
     if self.value == "+":
-      return TypeValue("Int", left + right)
+      return f"""
+        ; BinOp +
+        MOV EBX, {self.children[0].evaluate()}
+        PUSH EBX     ; BinUp guarda resultado no topo da pilha
+        MOV EBX, {self.children[1].evaluate()}
+        POP EAX      ; BinUp pega o primeiro operando do topo da pilha
+        ADD EAX, EBX ; BinUp realiza a operação
+        MOV EBX, EAX ; BinUp guarda resultado em EBX
+      """
     
     elif self.value == "-":
-      return TypeValue("Int", left - right)
+      return f"""
+        ; BinOp -
+        MOV EBX, {self.children[0].evaluate()}
+        PUSH EBX     ; BinUp guarda resultado no topo da pilha
+        MOV EBX, {self.children[1].evaluate()}
+        POP EAX      ; BinUp pega o primeiro operando do topo da pilha
+        SUB EAX, EBX ; BinUp realiza a operação
+        MOV EBX, EAX ; BinUp guarda resultado em EBX
+      """
     
     elif self.value == "*":
-      return TypeValue("Int", left * right)
+      return f"""
+        ; BinOp *
+        MOV EBX, {self.children[0].evaluate()}
+        PUSH EBX     ; BinUp guarda resultado no topo da pilha
+        MOV EBX, {self.children[1].evaluate()}
+        POP EAX       ; BinUp pega o primeiro operando do topo da pilha
+        IMUL EAX, EBX ; BinUp realiza a operação
+        MOV EBX, EAX  ; BinUp guarda resultado em EBX
+      """
     
     elif (self.value == "/"):
-      return TypeValue("Int", left // right)
-  
-    elif (self.value == ">"):
-      result = 1 if left > right else 0
-      return TypeValue("Int", result)
-    
-    elif (self.value == "<"):
-      result = 1 if left < right else 0
-      return TypeValue("Int", result)
-    
+      return f"""
+        ; BinOp /
+        MOV EBX, {self.children[0].evaluate()}
+        PUSH EBX     ; BinUp guarda resultado no topo da pilha
+        MOV EBX, {self.children[1].evaluate()}
+        POP EAX       ; BinUp pega o primeiro operando do topo da pilha
+        IDIV EAX, EBX ; BinUp realiza a operação
+        MOV EBX, EAX  ; BinUp guarda resultado em EBX
+      """
+
     elif (self.value == "&&"):
-      return TypeValue("Int", left and right)
+      return f"""
+        ; BinOp &&
+        MOV EBX, {self.children[0].evaluate()}
+        PUSH EBX     ; BinUp guarda resultado no topo da pilha
+        MOV EBX, {self.children[1].evaluate()}
+        POP EAX      ; BinUp pega o primeiro operando do topo da pilha
+        AND EAX, EBX ; BinUp realiza a operação
+        MOV EBX, EAX ; BinUp guarda resultado em EBX
+      """
     
     elif (self.value == "||"):
-      return TypeValue("Int", left or right)
-    
-    elif (self.value == "=="):
-      result = 1 if left == right else 0
-      return TypeValue("Int", result)
-    
-    elif (self.value == "."):
-      return TypeValue("String", str(left) + str(right))
-    
-  def evaluate_str(self, left, right) -> TypeValue:
-    """
-    Evaluate a binary operation between two strings
-    """
-    if (self.value == "=="):
-      result = 1 if left == right else 0
-      return TypeValue("Int", result)
-    
+      return f"""
+        ; BinOp ||
+        MOV EBX, {self.children[0].evaluate()}
+        PUSH EBX     ; BinUp guarda resultado no topo da pilha
+        MOV EBX, {self.children[1].evaluate()}
+        POP EAX      ; BinUp pega o primeiro operando do topo da pilha
+        OR EAX, EBX  ; BinUp realiza a operação
+        MOV EBX, EAX ; BinUp guarda resultado em EBX
+      """
+  
     elif (self.value == ">"):
-      result = 1 if left > right else 0
-      return TypeValue("Int", result)
+      return f"""
+        ; BinOp >
+        MOV EBX, {self.children[0].evaluate()}
+        PUSH EBX              ; BinUp guarda resultado no topo da pilha
+        MOV EBX, {self.children[1].evaluate()}
+        POP EAX               ; BinUp pega o primeiro operando do topo da pilha
+        CMP EAX, EBX          ; BinUp realiza a operação de comparação
+        JG EQUALITY_{self.id} ; Se for maior, pula para a label
+        MOV EBX, 0            ; Se não for maior, EBX = 0
+        EQUALITY_{self.id}:   ; Label
+        MOV EBX, 1            ; Se for maior, EBX = 1
+      """
     
     elif (self.value == "<"):
-      result = 1 if left < right else 0
-      return TypeValue("Int", result)
+      return f"""
+        ; BinOp <
+        MOV EBX, {self.children[0].evaluate()}
+        PUSH EBX              ; BinUp guarda resultado no topo da pilha
+        MOV EBX, {self.children[1].evaluate()}
+        POP EAX               ; BinUp pega o primeiro operando do topo da pilha
+        CMP EAX, EBX          ; BinUp realiza a operação de comparação
+        JL EQUALITY_{self.id} ; Se for menor, pula para a label
+        MOV EBX, 0            ; Se não for menor, EBX = 0
+        EQUALITY_{self.id}:   ; Label
+        MOV EBX, 1            ; Se for menor, EBX = 1
+      """
     
-    elif (self.value == "."):
-      return TypeValue("String", str(left) + str(right))
-
-  def evaluate_any(self, left, right) -> TypeValue:
-    """
-    Evaluate a binary operation between two different types
-    """
-    if (self.value == "."):
-      return TypeValue("String", str(left) + str(right))
     elif (self.value == "=="):
-      result = 1 if left == right else 0
-      return TypeValue("Int", result)
-    raise SyntaxError(f"Invalid operation: {left} {self.value} {right}")
-
-  def evaluate(self) -> TypeValue:
-    type_left, left = self.children[0].evaluate().instance
-    type_right, right = self.children[1].evaluate().instance
-
-    # Operações entre inteiros
-    if ((type_left == type_right) and type_left == "Int"):
-      return self.evaluate_int(left, right)
+      return f"""
+        ; BinOp ==
+        MOV EBX, {self.children[0].evaluate()}
+        PUSH EBX              ; BinUp guarda resultado no topo da pilha
+        MOV EBX, {self.children[1].evaluate()}
+        POP EAX               ; BinUp pega o primeiro operando do topo da pilha
+        CMP EAX, EBX          ; BinUp realiza a operação de comparação
+        JE EQUALITY_{self.id} ; Se for igual, pula para a label
+        MOV EBX, 0            ; Se não for igual, EBX = 0
+        EQUALITY_{self.id}:   ; Label
+        MOV EBX, 1            ; Se for igual, EBX = 1
+      """
     
-    # Operações entre strings
-    elif ((type_left == type_right) and type_left == "String"):
-      return self.evaluate_str(left, right)
-    
-    # Operação entre qualquer tipo
-    elif (type_left != type_right):
-      return self.evaluate_any(left, right)
-    
-    raise SyntaxError(f"Cannot evaluate a bin operation: {left} {self.value} {right}")
+    raise SyntaxError(f"Cannot evaluate a bin operation: {self.children[0].value} {self.value} {self.children[1].value}")
   
 
 
@@ -179,13 +277,17 @@ class UnOp(Node):
   def __init__(self, value, children) -> None:
     super().__init__(value, children)
 
-  def evaluate(self) -> TypeValue:
+  def evaluate(self) -> str:
     if (self.value == "+"):
-      return TypeValue("Int", self.children[0].evaluate().value)
-    elif (self.value == "-"):
-      return TypeValue("Int", -self.children[0].evaluate().value)
-    elif (self.value == "!"):
-      return TypeValue("Int", not self.children[0].evaluate().value)
+      return ""
+    elif (self.value == "-" or self.value == "!"):
+      return """
+        NEG EBX
+      """
+    # elif (self.value == "-"):
+    #   return TypeValue("Int", -self.children[0].evaluate().value)
+    # elif (self.value == "!"):
+    #   return TypeValue("Int", not self.children[0].evaluate().value)
     else:
       raise SyntaxError(f"Invalid unary operation: value = {self.value} :: children = {self.children[0]}")
 
@@ -195,8 +297,8 @@ class IntVal(Node):
   def __init__(self, value: int) -> None:
     super().__init__(value, children=[])
   
-  def evaluate(self) -> TypeValue:
-    return TypeValue("Int", self.value)
+  def evaluate(self) -> str:
+    return self.value
 
 
 class StrVal(Node):
@@ -211,26 +313,47 @@ class NoOp(Node):
   def __init__(self) -> None:
     super().__init__(value=None, children=None)
 
-  def evaluate(self) -> int:
+  def evaluate(self) -> None:
     pass
 
 
 class VariableDeclarationNode(Node):
   """
   @param `value`: type of the variable
+  @param `children`: [0] = Identifier, [1] = RelExpression
   """
   def __init__(self, value: str) -> None:
     super().__init__(value=value, children=[])
   
   def evaluate(self) -> None:
+    if self.value != "Int":
+      raise SyntaxError(f"Invalid type of variable declaration: only Int is supported at the moment")
+    
+    symbol_table.create(self.children[0].value)
+
+    # Se for uma declaração de variável com atribuição
     if len(self.children) > 1:
-      item = TypeValue(self.value, self.children[1].evaluate().value)
-      symbol_table.create(self.children[0].value, item)
+      return f"""
+        ; VarDec with assignment
+        PUSH DWORD 0
+        MOV EBX, {self.children[1].evaluate()}
+        MOV {self.children[0].evaluate()}, EBX
+      """
+      # item = TypeValue(self.value, self.children[1].evaluate().value)
+      # symbol_table.create(self.children[0].value, item)
+    
+    # Se for uma declaração de variável sem atribuição
     else:
-      if self.value == "Int":
-        item = TypeValue(self.value, 0)
-      elif self.value == "String":
-        item = TypeValue(self.value, "")
-      else:
-        raise SyntaxError(f"Invalid type of variable declaration: {self.value} :: {self.children[0].value}")
-      symbol_table.create(self.children[0].value, item)
+      return f"""
+        ; VarDec without assignment
+        PUSH DWORD 0
+        MOV EBX, 0
+        MOV {self.children[0].evaluate()}, EBX
+      """
+      # if self.value == "Int":
+      #   item = TypeValue(self.value, 0)
+      # elif self.value == "String":
+      #   item = TypeValue(self.value, "")
+      # else:
+      #   raise SyntaxError(f"Invalid type of variable declaration: {self.value} :: {self.children[0].value}")
+      # symbol_table.create(self.children[0].value, item)

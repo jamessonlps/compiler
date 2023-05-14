@@ -353,15 +353,15 @@ class Parser():
 
 
     @staticmethod
-    def run(code) -> int:
+    def run(code) -> str:
         remove_comments = PrePro.filter(text=code)
         code_processed = PrePro.add_eof(text=remove_comments)
         
         Parser.tokenizer = Tokenizer(source=code_processed)
 
         result = Parser.parseBlock()
-        result.evaluate()
+        assembly = result.evaluate()
 
         if isinstance(Parser.tokenizer.next, EndOfFileToken):
-            return result
+            return assembly
         raise SyntaxError("Where is EOF?")

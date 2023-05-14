@@ -11,16 +11,17 @@ class SymbolTable:
   """
   def __init__(self) -> None:
     self._table = {}
+    self.shift = 0
   
   @property
   def table(self) -> dict:
     return self._table
   
-  def create(self, key, value):
-    if key in self._table.keys():
-      raise SyntaxError(f"Item {key} already exists")
-    self._table[key] = value
-
+  def create(self, item):
+    if item in self._table.keys():
+      raise SyntaxError(f"Item {item} already exists")
+    self.shift += 4
+    self._table[item] = self.shift
 
   def getter(self, item):
     if item in self._table.keys():
