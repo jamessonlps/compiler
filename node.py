@@ -63,12 +63,22 @@ class PrintlnNode(Node):
     super().__init__(value=0, children=[])
   
   def evaluate(self) -> str:
-    return f"""
-      ; Println
-      PUSH EBX
-      CALL print
-      POP EBX
-    """
+    if isinstance(self.children[0], (IntVal, IdentifierNode)):
+      return f"""
+        ; Println(Identifier | IntVal)
+        MOV EBX, {self.children[0].evaluate()}
+        PUSH EBX
+        CALL print
+        POP EBX
+      """
+    else:
+      return f"""
+        ; Println(RelExpression)
+        {self.children[0].evaluate()}
+        PUSH EBX
+        CALL print
+        POP EBX
+      """
 
 
 class IdentifierNode(Node):
@@ -127,16 +137,16 @@ class ConditionalNode(Node):
     elif len(self.children) > 2:
       return f"""
         ; if/else => if
-        CONDITION_{self.id}:
+        CONDITION_IF_{self.id}:
         {self.children[0].evaluate()}
         CMP EBX, False
-        JE CONDITION_{self.children[2].id}
+        JE CONDITION_ELSE_{self.children[2].id}
         {self.children[1].evaluate()}
-        JMP CONDITION_{self.id}
-
+        JMP EXIT_IF_{self.id}
         ; if/else => else
-        CONDITION_{self.children[2].id}:
+        CONDITION_ELSE_{self.children[2].id}:
         {self.children[2].evaluate()}
+        EXIT_IF_{self.id}:
       """
     else:
       return f"""
@@ -146,7 +156,6 @@ class ConditionalNode(Node):
         CMP EBX, False
         JE EXIT_{self.id}
         {self.children[1].evaluate()}
-        JMP CONDITION_{self.id}
         EXIT_{self.id}:
       """
 
@@ -229,7 +238,7 @@ class BinUp(Node):
   
     elif (self.value == ">"):
       return f"""
-        ; BinOp >
+        ; {self.children[0].value} > {self.children[1].value}
         MOV EBX, {self.children[0].evaluate()}
         PUSH EBX              ; BinUp guarda resultado no topo da pilha
         MOV EBX, {self.children[1].evaluate()}
@@ -237,13 +246,15 @@ class BinUp(Node):
         CMP EAX, EBX          ; BinUp realiza a operação de comparação
         JG EQUALITY_{self.id} ; Se for maior, pula para a label
         MOV EBX, 0            ; Se não for maior, EBX = 0
+        JMP EXIT_{self.id}    ; Pula para o final
         EQUALITY_{self.id}:   ; Label
         MOV EBX, 1            ; Se for maior, EBX = 1
+        EXIT_{self.id}:       ; Final do BinOp
       """
     
     elif (self.value == "<"):
       return f"""
-        ; BinOp <
+        ; {self.children[0].value} < {self.children[1].value}
         MOV EBX, {self.children[0].evaluate()}
         PUSH EBX              ; BinUp guarda resultado no topo da pilha
         MOV EBX, {self.children[1].evaluate()}
@@ -251,13 +262,15 @@ class BinUp(Node):
         CMP EAX, EBX          ; BinUp realiza a operação de comparação
         JL EQUALITY_{self.id} ; Se for menor, pula para a label
         MOV EBX, 0            ; Se não for menor, EBX = 0
+        JMP EXIT_{self.id}    ; Pula para o final
         EQUALITY_{self.id}:   ; Label
         MOV EBX, 1            ; Se for menor, EBX = 1
+        EXIT_{self.id}:       ; Final do BinOp
       """
     
     elif (self.value == "=="):
       return f"""
-        ; BinOp ==
+        ; {self.children[0].value} == {self.children[1].value}
         MOV EBX, {self.children[0].evaluate()}
         PUSH EBX              ; BinUp guarda resultado no topo da pilha
         MOV EBX, {self.children[1].evaluate()}
@@ -265,8 +278,10 @@ class BinUp(Node):
         CMP EAX, EBX          ; BinUp realiza a operação de comparação
         JE EQUALITY_{self.id} ; Se for igual, pula para a label
         MOV EBX, 0            ; Se não for igual, EBX = 0
+        JMP EXIT_{self.id}    ; Pula para o final
         EQUALITY_{self.id}:   ; Label
         MOV EBX, 1            ; Se for igual, EBX = 1
+        EXIT_{self.id}:       ; Final do BinOp
       """
     
     raise SyntaxError(f"Cannot evaluate a bin operation: {self.children[0].value} {self.value} {self.children[1].value}")

@@ -15,4 +15,4 @@ if __name__ == "__main__":
 
     asm = assembler.write(code_without_spaces, filename=filename)
 
-    print(asm)
+    # print(asm)
