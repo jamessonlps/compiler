@@ -1,14 +1,14 @@
 from abc import ABC, abstractmethod
 from SymbolTable import SymbolTable
 from FunctionTable import function_table
-from typing import Union
+from typing import Union, List
 from _types import TypeValue
 
 
 class Node(ABC):
   def __init__(self, value: Union[int, str], children) -> None:
     self.value: Union[int, str] = value
-    self.children: list[Node] = children
+    self.children: List[Node] = children
 
   @abstractmethod
   def evaluate(self, symbol_table: SymbolTable) -> TypeValue:
@@ -34,7 +34,7 @@ class AssignmentNode(Node):
     [0] -> Identifier\n
     [1] -> RelExpression
   """
-  def __init__(self, children: list[Node] = []) -> None:
+  def __init__(self, children: List[Node] = []) -> None:
     super().__init__(value=0, children=children)
   
   def evaluate(self, symbol_table) -> None:
@@ -261,7 +261,7 @@ class FunctionDeclarationNode(Node):
     [...] -> parameters of the function (`VariableDeclarationNode`)\n
     [-1]  -> body of the function (`Block`)
   """
-  def __init__(self, value: str, children: list[Node]) -> None:
+  def __init__(self, value: str, children: List[Node]) -> None:
     super().__init__(value=value, children=children)
     self.num_params = len(children) - 2
     self.return_type = value
@@ -276,7 +276,7 @@ class ReturnNode(Node):
   @param `children`:
     [0] -> value to return (rel_expression)
   """
-  def __init__(self, children: list[Node]) -> None:
+  def __init__(self, children: List[Node]) -> None:
     super().__init__(value="return", children=children)
   
   def evaluate(self, symbol_table) -> TypeValue:
@@ -288,7 +288,7 @@ class FunctionCallNode(Node):
   @param `value`: name of the function
   @param `children`: parameters of the function (Identifier, IntVal, StrVal, BinOp, UnOp)
   """
-  def __init__(self, value: str, children: list[Node]) -> None:
+  def __init__(self, value: str, children: List[Node]) -> None:
     super().__init__(value=value, children=children)
 
   def evaluate(self, symbol_table) -> TypeValue:
