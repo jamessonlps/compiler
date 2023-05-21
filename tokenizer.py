@@ -1,3 +1,4 @@
+from typing import Tuple
 from tokens import *
 
 
@@ -38,7 +39,7 @@ class Tokenizer():
         self.next, self.position = self.see_next_token()
 
 
-    def see_next_token(self) -> tuple[Token, int]:
+    def see_next_token(self) -> Tuple[Token, int]:
         """
         Set the next token to the `next` param.
         """
