@@ -134,6 +134,15 @@ class BreakLineToken(Token):
         return self._value
 
 
+class CommaToken(Token):
+    def __init__(self) -> None:
+        super().__init__(",")
+
+    @property
+    def value(self) -> str:
+        return self._value
+
+
 class IdentifierToken(Token):
     def __init__(self, value: str) -> None:
         super().__init__(value)
@@ -237,6 +246,24 @@ class PrintlnToken(Token):
 class ReadlineToken(Token):
     def __init__(self) -> None:
         return super().__init__("readline")
+
+    @property
+    def value(self) -> str:
+        return self._value
+
+
+class FunctionDeclarationToken(Token):
+    def __init__(self) -> None:
+        return super().__init__("function")
+
+    @property
+    def value(self) -> str:
+        return self._value
+
+
+class ReturnToken(Token):
+    def __init__(self) -> None:
+        return super().__init__("return")
 
     @property
     def value(self) -> str:
