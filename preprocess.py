@@ -1,16 +1,28 @@
-import re
-
 class PrePro():
 
     @staticmethod
     def filter(text: str) -> str:
         """
-        Remove all comments in the code.
+        Remove comments outside double-quoted strings in the code.
         @param `text`: str
         """
-        removed_comments = re.sub(pattern=r"#.*", repl="", string=text)
-        # removed_final_white_spaces = re.sub(pattern=r"\s+$", repl="", string=removed_comments)
-        return removed_comments
+        result = []
+        in_string = False
+        in_comment = False
+
+        for char in text:
+            if in_comment:
+                if char not in "\r\n":
+                    continue
+                in_comment = False
+            elif char == '"':
+                in_string = not in_string
+            elif char == "#" and not in_string:
+                in_comment = True
+                continue
+            result.append(char)
+
+        return "".join(result)
 
 
     @staticmethod

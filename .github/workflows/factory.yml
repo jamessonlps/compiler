@@ -1,0 +1,35 @@
+name: Factory
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [master]
+permissions:
+  contents: read
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+  PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1"
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12.14"
+      - name: Install pinned checks
+        run: python -m pip --isolated install --disable-pip-version-check --no-input --index-url https://pypi.org/simple iniconfig==2.3.1 packaging==26.3 pluggy==1.7.0 Pygments==2.21.0 pytest==9.1.1 ruff==0.17.2
+      - name: Tests
+        run: python -B -m pytest tests --junitxml=.factory-results/tests.xml
+      - name: Compile Python
+        run: python -B -m compileall -q SymbolTable.py _parser.py _types.py assembler.py main.py node.py preprocess.py tokenizer.py tokens.py tests
+      - name: Fatal Python lint
+        run: python -B -m ruff check --isolated --no-cache --select E9,F63,F7,F82 SymbolTable.py _parser.py _types.py assembler.py main.py node.py preprocess.py tokenizer.py tokens.py tests
+      - name: Upload JUnit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-results
+          path: .factory-results/tests.xml
+          if-no-files-found: error
